@@ -1,0 +1,21 @@
+/* ─── RESET GENERAL ─── */
+/* Elimina márgenes y paddings que los navegadores aplican por defecto.
+   box-sizing: border-box hace que el padding y borde se incluyan
+   dentro del ancho/alto total del elemento, facilitando el diseño. */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── CUERPO DE LA PÁGINA ─── */
+/* Fondo negro sólido para evitar distracciones visuales.
+   overflow: hidden oculta las barras de scroll del navegador.
+   Flexbox centra el canvas tanto horizontal como verticalmente,
+   ocupando toda la ventana (100vw x 100vh). */
+body { background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; }
+
+/* ─── LIENZO (CANVAS) ─── */
+/* display: block elimina el espacio extra que algunos navegadores
+   añaden debajo del canvas (por su naturaleza inline por defecto).
+   image-rendering: pixelated desactiva el suavizado (antialiasing)
+   para que los gráficos pixel-art se vean nítidos y sin difuminado.
+   cursor: crosshair cambia el cursor del mouse a una mira de
+   precisión, ideal para un juego de disparos. */
+canvas { display: block; image-rendering: pixelated; cursor: crosshair; }

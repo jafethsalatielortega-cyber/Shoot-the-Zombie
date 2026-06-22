@@ -1,0 +1,268 @@
+// ─── main.js ───
+// Punto de entrada del juego. Controla la máquina de estados principal
+// (title → playing → gameover) y coordina la actualización y renderizado
+// en cada frame mediante requestAnimationFrame.
+// También maneja pausa, transiciones entre oleadas y eventos especiales
+// como el meteorito en el mapa "The Moving Bus".
+
+// ─── VARIABLE DE TIEMPO ───
+// Guarda el timestamp del último frame para calcular el delta de tiempo (dt)
+let lastTime = 0;
+
+// ─── BUCLE PRINCIPAL DEL JUEGO ───
+// Se ejecuta en cada frame usando requestAnimationFrame (aprox. 60 fps).
+// Este es el corazón del juego: en cada iteración se:
+//   1. Calcula el delta de tiempo (dt) para animaciones independientes de FPS
+//   2. Limpia el canvas
+//   3. Ejecuta la lógica correspondiente al estado actual (máquina de estados)
+//   4. Los estados son: 'title' → 'mapSelect' → 'playing' → 'gameover'
+function loop(timestamp) {
+  requestAnimationFrame(loop);
+
+  // ─── [NEW] ACTUALIZAR FLAGS DE DISPOSITIVO ───
+  updateDeviceFlags();
+
+  // ─── CÁLCULO DEL DELTA DE TIEMPO ───
+  // dt = tiempo en segundos desde el último frame.
+  // Se limita a 0.05 (50ms ≈ 20 FPS mínimo) para evitar que el juego
+  // "salte" si el navegador se congela por un momento.
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+
+  ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+
+  if (!gs) { gs = createGameState(); }
+
+  // ─── POLLING DEL MANDO (GAMEPAD) ───
+  if (typeof updateGamepad === 'function') updateGamepad();
+
+  // ─── [NEW] PORTRAIT PAUSE ───
+  // En teléfonos en vertical: detiene el juego y muestra overlay.
+  // Se reanuda automáticamente al girar a horizontal.
+  const isPortraitBlock = showTouchControls && window.innerWidth < window.innerHeight && window.innerWidth < 768;
+
+  // ─── MÁQUINA DE ESTADOS ───
+  switch(gs.state) {
+    // ─── PANTALLA DE TÍTULO ───
+    // Muestra el menú principal con el título del juego.
+    // Al presionar ENTER se llama a startGame(), que inicia la transición
+    // a la pantalla de selección de mapa (gracias al wrapper de mapSystem.js).
+    case 'title':
+      if (isPortraitBlock) { drawOrientationOverlay(); break; }
+      drawTitleScreen();
+      if (keys['Enter'] || keys['NumpadEnter']) {
+        if (!gs._enterBuf) {
+          gs._enterBuf = true;
+          startGame();
+        }
+      } else { gs._enterBuf = false; }
+      break;
+
+    // ─── ESTADO DE JUEGO ACTIVO ───
+    // Aquí ocurre toda la acción del juego:
+    // - Manejo de pausa (ESC o clic en botón de pausa)
+    // - Transición entre oleadas (waveComplete → nextWave)
+    // - updatePlaying(): toda la lógica del juego (movimiento, IA, colisiones)
+    // - renderGame(): dibujar todo en el canvas
+    // - Evento meteorito (mapa 2, a partir de oleada 10)
+    case 'playing':
+      // ─── PORTRAIT BLOCK ───
+      if (isPortraitBlock) {
+        renderGame(gs);
+        drawTransitionOverlay(gs);
+        drawOrientationOverlay();
+        break;
+      }
+      // ─── PAUSA CON TECLA ESC ───
+      // Alterna entre pausado y reanudado; usa buffer para detectar flanco
+      if (keys['Escape'] && !gs._pauseBuf) {
+        gs._pauseBuf = true;
+        gs.paused = !gs.paused;
+        if (!gs.paused && gs.player) gs.player.fireCooldown = 0.15;
+      }
+      if (!keys['Escape'] && gs) gs._pauseBuf = false;
+      // ─── PAUSA CON CLIC EN BOTÓN ───
+      if (mouse.down && !gs._pauseClickBuf && gs._pauseBtn) {
+        const b = gs._pauseBtn;
+        if (mouse.x >= b.x && mouse.x <= b.x + b.w && mouse.y >= b.y && mouse.y <= b.y + b.h) {
+          gs._pauseClickBuf = true;
+          gs.paused = !gs.paused;
+          if (!gs.paused && gs.player) gs.player.fireCooldown = 0.15;
+        }
+      }
+      if (!mouse.down && gs) gs._pauseClickBuf = false;
+      // Si está pausado, solo renderiza (sin actualizar) y muestra el overlay
+      if (gs.paused) {
+        renderGame(gs);
+        drawPauseOverlay(gs);
+
+        // ─── CLIC EN MENÚ DE PAUSA ───
+        if (mouse.down && !gs._pauseClickBuf2) {
+          gs._pauseClickBuf2 = true;
+          let handled = false;
+
+          // ─── BOTONES DE VOLUMEN (se verifican ANTES que opciones,
+          //     porque están dentro del área del botón OPCIONES) ───
+          if (gs._pauseOptionsOpen) {
+            if (gs._pauseVolMinus &&
+                mouse.x > gs._pauseVolMinus.x && mouse.x < gs._pauseVolMinus.x + gs._pauseVolMinus.w &&
+                mouse.y > gs._pauseVolMinus.y && mouse.y < gs._pauseVolMinus.y + gs._pauseVolMinus.h) {
+              if (typeof masterVolume !== 'undefined') { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); try { playTone(600, 600, 'sine', 0.08, 0.15); } catch(e){} }
+              handled = true;
+            }
+            if (!handled && gs._pauseVolPlus &&
+                mouse.x > gs._pauseVolPlus.x && mouse.x < gs._pauseVolPlus.x + gs._pauseVolPlus.w &&
+                mouse.y > gs._pauseVolPlus.y && mouse.y < gs._pauseVolPlus.y + gs._pauseVolPlus.h) {
+              if (typeof masterVolume !== 'undefined') { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); try { playTone(800, 800, 'sine', 0.08, 0.15); } catch(e){} }
+              handled = true;
+            }
+          }
+
+          if (!handled) {
+            const btns = gs._pauseBtns;
+            if (btns) {
+              // ─── REANUDAR ───
+              if (mouse.x > btns.resume.x && mouse.x < btns.resume.x + btns.resume.w &&
+                  mouse.y > btns.resume.y && mouse.y < btns.resume.y + btns.resume.h) {
+                gs.paused = false;
+                handled = true;
+                if (gs.player) gs.player.fireCooldown = 0.15;
+              }
+              // ─── OPCIONES (EXPANDIR/CONTRAER) ───
+              if (!handled &&
+                  mouse.x > btns.options.x && mouse.x < btns.options.x + btns.options.w &&
+                  mouse.y > btns.options.y && mouse.y < btns.options.y + btns.options.h) {
+                gs._pauseOptionsOpen = !gs._pauseOptionsOpen;
+                handled = true;
+              }
+              // ─── VOLVER AL MENÚ ───
+              if (!handled &&
+                  mouse.x > btns.menu.x && mouse.x < btns.menu.x + btns.menu.w &&
+                  mouse.y > btns.menu.y && mouse.y < btns.menu.y + btns.menu.h) {
+                if (typeof meteorEvent !== 'undefined' && meteorEvent.triggered) resetMeteorEvent();
+                if (typeof _setMapConfirmed !== 'undefined') window._setMapConfirmed(false);
+                gs = createGameState();
+                gs.state = 'title';
+                handled = true;
+              }
+            }
+          }
+        }
+        if (!mouse.down) gs._pauseClickBuf2 = false;
+
+        break;
+      }
+      // ─── OLEADA COMPLETADA ───
+      // Cuando el jugador mata a todos los zombies, se activa showWaveComplete.
+      // Después de 6.5 segundos (waveCompleteTimer), avanza a la siguiente oleada.
+      if (gs.showWaveComplete) {
+        gs.waveCompleteTimer -= dt;
+        if (gs.waveCompleteTimer <= 0) {
+          gs.showWaveComplete = false;
+          nextWave(gs);
+        }
+      }
+      // ─── ACTUALIZAR Y RENDERIZAR ───
+      updatePlaying(gs, dt);                               // Lógica del juego
+      renderGame(gs);                                      // Dibujar todo
+
+      // ─── TEXTO DE OLEADA COMPLETADA ───
+      // Cartel "WAVE X COMPLETE" con parpadeo y mensaje contextual
+      if (gs.showWaveComplete) {
+        let alpha = 1;
+        if (gs.waveCompleteTimer < 1.5) {
+          alpha = gs.waveCompleteTimer / 1.5;
+        }
+        const flash = Math.sin(Date.now() * 0.01) > 0;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 36px monospace';
+        ctx.fillStyle = flash ? '#ff2020' : '#ffffff';
+        ctx.fillText('WAVE ' + gs.wave + ' COMPLETE', LOGICAL_W / 2, 140);
+        const msg = getWaveMessage(gs.wave);
+        if (msg) {
+          ctx.fillStyle = flash ? '#ff6666' : '#cccccc';
+          ctx.font = 'italic 16px monospace';
+          ctx.fillText(msg, LOGICAL_W / 2, 168);
+        }
+        ctx.restore();
+        ctx.textAlign = 'left';
+      }
+
+      // ─── ANUNCIO DE NUEVA OLEADA ───
+      // Texto emergente "WAVE X" que aparece al inicio de cada oleada
+      if (gs.waveAnnouncement && gs.waveAnnouncement.active) {
+        gs.waveAnnouncement.opacity -= dt / 2;
+        if (gs.waveAnnouncement.opacity <= 0) {
+          gs.waveAnnouncement.active = false;
+        }
+        drawWaveAnnouncement(gs);
+      }
+
+      // ─── EVENTO METEORITO (SOLO MAPA 2: THE MOVING BUS) ───
+      // Evento cinemático que ocurre en la oleada 10 del mapa "The Moving Bus":
+      // un meteorito atraviesa el cielo, impacta, y deja un ambiente de fuego
+      // con partículas de ceniza (ash) y distorsión de calor (heat shimmer).
+      if (gs.selectedMap === 2) {
+        if (gs.wave >= 10 && !meteorEvent.triggered) {
+          meteorEvent.triggered = true;
+          meteorEvent.phase = 'incoming';
+          meteorEvent.timer = 0;
+          meteorEvent.meteorX = gs.camX + 1000 + Math.random() * 200;
+          meteorEvent.meteorY = -120;
+          meteorEvent.impactX = meteorEvent.meteorX + (Math.random() * 60 - 30);
+          meteorEvent.impactY = 58;
+          meteorEvent.meteorVY = 50;
+          meteorEvent.meteorVX = (meteorEvent.impactX - meteorEvent.meteorX) / 3.5;
+          initMeteorSounds();
+        }
+        updateMeteorEvent(gs, dt);
+      }
+      if (gs.selectedMap === 2 && meteorEvent.phase === 'burning') {
+        drawAshParticles(gs);
+        if (Math.floor(Date.now() / 400) % 3 === 0) drawHeatShimmer(gs);
+      }
+      break;
+
+    // ─── ESTADO DE GAME OVER ───
+    // Pantalla de derrota cuando el jugador muere.
+    // Opciones: presionar R para reiniciar, o hacer clic en "Play Again"
+    // (reinicia) o "Menu" (vuelve a la pantalla de título).
+    case 'gameover':
+      if (isPortraitBlock) { drawOrientationOverlay(); break; }
+      renderGame(gs);
+      drawGameOverScreen(gs);
+      // ─── REINICIAR CON TECLA R ───
+      if (keys['KeyR'] && !gs._rBuf) {
+        gs._rBuf = true;
+        if (meteorEvent.triggered) resetMeteorEvent();
+        gs = createGameState();
+        startGame();
+      }
+      if (!keys['KeyR']) { if(gs) gs._rBuf = false; }
+      // ─── BOTONES: "PLAY AGAIN" Y "MENU" ───
+      const bx  = LOGICAL_W/2-140, by =310, bw=280, bh=44;
+      const bx2 = LOGICAL_W/2-140, by2=368, bw2=280, bh2=44;
+      if (mouse.down && !gs._clickBuf) {
+        if (mouse.x>bx && mouse.x<bx+bw && mouse.y>by && mouse.y<by+bh) {
+          gs._clickBuf = true;
+          if (meteorEvent.triggered) resetMeteorEvent();
+          gs = createGameState();
+          startGame();
+        } else if (mouse.x>bx2 && mouse.x<bx2+bw2 && mouse.y>by2 && mouse.y<by2+bh2) {
+          gs._clickBuf = true;
+          if (meteorEvent.triggered) resetMeteorEvent();
+          window._setMapConfirmed(false);
+          gs = createGameState();
+          gs.state = 'title';
+        }
+      }
+      if (!mouse.down && gs) gs._clickBuf = false;
+      break;
+  }
+}
+
+// ─── INICIAR EL BUCLE PRINCIPAL ───
+// La primera llamada a requestAnimationFrame arranca el loop infinito del juego.
+requestAnimationFrame(loop);

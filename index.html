@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!-- ─── DOCUMENTO HTML DEL JUEGO "SHOOT THE ZOMBIE" ─── -->
+<!-- Punto de entrada de la aplicación. Carga todos los scripts y estilos
+     necesarios para el juego. El ORDEN de los scripts es CRUCIAL porque
+     cada archivo depende de variables/funciones definidas en los anteriores:
+
+     1. CONSTANTES      → Valores fijos usados por todo el juego
+     2. NÚCLEO          → Canvas, audio, input (teclado/mouse)
+     3. ENTIDADES       → Clases de objetos (Player, Zombie, Bullet, etc.)
+     4. SISTEMAS        → Partículas, textos flotantes, física
+     5. DIBUJO          → Funciones de renderizado de cada elemento
+     6. GESTORES        → Lógica: estado, oleadas, bucle, renderizador
+     7. INICIO Y MAPAS  → main.js + sistemas de mapas (wrappers)
+
+     Los wrappers de mapSystem.js reemplazan funciones globales de los pasos
+     anteriores, por lo que DEBE cargarse DESPUÉS de todo lo que reemplaza. -->
+<html lang="en">
+<head>
+<!-- ─── METADATOS ─── -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<!-- Título visible en la pestaña del navegador -->
+<title>Shoot the Zombie</title>
+<!-- ─── HOJA DE ESTILOS ─── -->
+<!-- base.css: reset de márgenes, canvas a pantalla completa, cursor de mira (crosshair) -->
+<link rel="stylesheet" href="CSS/base.css">
+<!-- ─── [NEW] RESPONSIVE SCALING ─── -->
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #000; overflow: hidden; width: 100vw; height: 100vh; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; }
+</style>
+</head>
+<body>
+<!-- ─── CANVAS PRINCIPAL ─── -->
+<!-- El <canvas> es el único elemento visual del juego. Aquí se renderiza TODO:
+     menú principal, selección de mapas, escenario, jugador, zombies, jefe,
+     balas, partículas, HUD, pantalla de game over, etc.
+     El canvas se configura en JS/core/canvas.js con resolución lógica fija. -->
+<canvas id="c"></canvas>
+
+<!-- ─── SCRIPTS: CONSTANTES ─── -->
+<!-- Archivos con valores fijos del juego: constantes globales (tamaños, velocidades),
+     plataformas del escenario, props (objetos decorativos) y definición de armas. -->
+<script src="JS/constants/gameConstants.js"></script>
+<script src="JS/constants/platforms.js"></script>
+<script src="JS/constants/props.js"></script>
+<script src="JS/constants/weapons.js"></script>
+
+<!-- ─── SCRIPTS: NÚCLEO ─── -->
+<!-- Configuración del canvas (resolución, escalado), sistema de audio con Web Audio API
+     (efectos de sonido y música) y entrada de teclado/mouse (event listeners). -->
+<script src="JS/core/canvas.js"></script>
+<script src="JS/core/audio.js"></script>
+<script src="JS/core/input.js"></script>
+
+<!-- ─── SCRIPTS: ENTIDADES ─── -->
+<!-- Clases/constructores de cada objeto del juego:
+     Player, Zombie (con subtipos Shambler/Runner/Brute/Shooter/Bomber/Electrician),
+     BossZombie (jefe), Bullet (proyectil) y Pickup (objeto recogible). -->
+<script src="JS/entities/Player.js"></script>
+<script src="JS/entities/Zombie.js"></script>
+<script src="JS/entities/BossZombie.js"></script>
+<script src="JS/entities/ElectricianZombie.js"></script>
+<script src="JS/entities/Bullet.js"></script>
+<script src="JS/entities/Pickup.js"></script>
+
+<!-- ─── SCRIPTS: SISTEMAS ─── -->
+<!-- Sistemas auxiliares: partículas (sangre, explosiones, ceniza),
+     textos flotantes (números de daño, power-ups) y física (gravedad, colisiones). -->
+<script src="JS/systems/particles.js"></script>
+<script src="JS/systems/floatingText.js"></script>
+<script src="JS/systems/physics.js"></script>
+
+<!-- ─── SCRIPTS: DIBUJO (RENDER) ─── -->
+<!-- Funciones especializadas que dibujan cada elemento en el canvas:
+     props decorativos, mapas de fondo, jugador, zombies, jefe, HUD,
+     fogonazo del arma, pickups, balas y pantallas (título, game over, pausa). -->
+<script src="JS/draw/props.js"></script>
+<script src="JS/draw/map.js"></script>
+<script src="JS/draw/player.js"></script>
+<script src="JS/draw/zombies.js"></script>
+<script src="JS/draw/boss.js"></script>
+<script src="JS/draw/hud.js"></script>
+<script src="JS/draw/muzzleFlash.js"></script>
+<script src="JS/draw/pickups.js"></script>
+<script src="JS/draw/bullets.js"></script>
+<script src="JS/draw/screens.js"></script>
+
+<!-- ─── SCRIPTS: GESTORES ─── -->
+<!-- Lógica que coordina todo el juego:
+     gameState.js   → Estado global (objeto gs) y función createGameState()
+     waveManager.js → Construcción de colas de spawn y configuración de oleadas
+     gameLoop.js    → Bucle de actualización (física, IA, colisiones, power-ups)
+     renderer.js    → Coordinación del renderizado y transiciones entre oleadas -->
+<script src="JS/managers/gameState.js"></script>
+<script src="JS/managers/waveManager.js"></script>
+<script src="JS/managers/gameLoop.js"></script>
+<script src="JS/managers/renderer.js"></script>
+
+<!-- ─── SCRIPTS: INICIO Y MAPAS ─── -->
+<!-- main.js: Arranca el bucle principal requestAnimationFrame.
+              Contiene la máquina de estados (title → playing → gameover).
+
+     mapSystem.js: Pantalla de selección de mapa + wrappers que redirigen
+                   funciones globales según el mapa elegido.
+
+     mapBus.js: Implementación completa del mapa alternativo
+                "The Moving Bus" (física, spawn, render y eventos). -->
+<script src="JS/main.js"></script>
+<script src="JS/maps/mapSystem.js"></script>
+<script src="JS/maps/mapBus.js"></script>
+</body>
+</html>
