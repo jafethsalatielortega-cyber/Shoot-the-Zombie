@@ -192,8 +192,11 @@
       for (let i = 0; i < 2; i++) {
         const cx = startX + i * (cardW + gap);
         if (mouse.x > cx && mouse.x < cx + cardW && mouse.y > cardY && mouse.y < cardY + cardH) {
-          _hovered = i + 1;
+          _selectedMap = i + 1;
+          _mapConfirmed = true;
           gs._clickBuf = true;
+          gs = createGameState();
+          startGame();
           break;
         }
       }
