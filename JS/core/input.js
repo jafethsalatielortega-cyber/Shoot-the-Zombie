@@ -191,6 +191,10 @@ function handlePointerDown(e) {
   if (!audioInit) initAudio();
   updateDeviceFlags();
   pointerPressed = true;
+  // Actualiza mouse.x/y para que los botones del menú (pausa, etc.)
+  // tengan la posición correcta aunque estén fuera de AIM_ZONE
+  mouse.x = p.x;
+  mouse.y = p.y;
 
   // Joystick (zona izquierda)
   if (dist(p.x, p.y, JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y) < JOYSTICK_OUTER_R + 10) {
@@ -257,6 +261,10 @@ function handlePointerMove(e) {
   e.preventDefault();
   const p = getCanvasCoords(e.clientX, e.clientY);
   const id = e.pointerId;
+
+  // Actualiza mouse.x/y para arrastres en menús
+  mouse.x = p.x;
+  mouse.y = p.y;
 
   // Preserva _btn existente (botón original del pointerdown) para que
   // handlePointerUp pueda identificar qué botón se soltó
