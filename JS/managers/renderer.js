@@ -165,11 +165,11 @@ function renderGame(gs) {
   // ─── [NEW] VIRTUAL GAMEPAD ───
   // Gamepad táctil que se dibuja solo en dispositivos táctiles.
   // Incluye joystick de movimiento, botones de acción y zona de puntería.
-  if (showTouchControls) drawTouchGamepad();
+  if (showTouchControls) drawTouchGamepad(gs);
 }
 
 // ─── [NEW] DRAW TOUCH GAMEPAD ───
-function drawTouchGamepad() {
+function drawTouchGamepad(gs) {
   ctx.save();
 
   // ─── JOYSTICK (movimiento, lado izquierdo) ───
@@ -272,18 +272,20 @@ function drawTouchGamepad() {
   ctx.textAlign = 'center';
   ctx.fillText('KNIFE', BTN_KNIFE_X, BTN_KNIFE_Y + 3);
 
-  // ─── BOTÓN BOARD ───
-  ctx.beginPath();
-  ctx.arc(BTN_BOARD_X, BTN_BOARD_Y, BTN_BOARD_R, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(200,140,60,0.45)';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(220,170,90,0.8)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 10px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('BOARD', BTN_BOARD_X, BTN_BOARD_Y + 3);
+  // ─── BOTÓN BOARD (solo en mapa bus) ───
+  if (gs && gs.selectedMap === 2) {
+    ctx.beginPath();
+    ctx.arc(BTN_BOARD_X, BTN_BOARD_Y, BTN_BOARD_R, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(200,140,60,0.45)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(220,170,90,0.8)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOARD', BTN_BOARD_X, BTN_BOARD_Y + 3);
+  }
 
   // ─── INDICADOR DE PUNTERÍA TÁCTIL ───
   // Pequeña cruceta que muestra hacia dónde apunta el jugador con el toque

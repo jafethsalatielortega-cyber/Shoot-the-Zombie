@@ -1378,7 +1378,7 @@ function drawBusDarknessOverlay(gs) {
       ctx.fillRect(0, 0, LOGICAL_W, 36);
       ctx.restore();
     }
-    if (showTouchControls) drawTouchGamepad();
+    if (showTouchControls) drawTouchGamepad(gs);
 
     drawHUD(gs);
   };

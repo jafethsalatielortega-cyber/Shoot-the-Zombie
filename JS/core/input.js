@@ -267,7 +267,7 @@ function handlePointerDown(e) {
   // Botón BOARD / TABLAS (T)
   if (dist(p.x, p.y, BTN_BOARD_X, BTN_BOARD_Y) < BTN_BOARD_R + 12) {
     touches[id]._btn = 'board';
-    pressMomentaryKey('KeyT');
+    keys['KeyT'] = true;
     return;
   }
 
@@ -332,6 +332,9 @@ function handlePointerUp(e) {
     }
     if (touch._btn === 'knife') {
       keys['KeyE'] = false;
+    }
+    if (touch._btn === 'board') {
+      keys['KeyT'] = false;
     }
   }
 
