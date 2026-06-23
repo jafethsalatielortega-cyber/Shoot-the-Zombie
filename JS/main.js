@@ -53,7 +53,7 @@ function loop(timestamp) {
     case 'title':
       if (isPortraitBlock) { drawOrientationOverlay(); break; }
       drawTitleScreen();
-      const titleClick = mouse.down && _titlePlayBtn &&
+      const titleClick = (mouse.down || pointerPressed) && _titlePlayBtn &&
         mouse.x > _titlePlayBtn.x && mouse.x < _titlePlayBtn.x + _titlePlayBtn.w &&
         mouse.y > _titlePlayBtn.y && mouse.y < _titlePlayBtn.y + _titlePlayBtn.h;
       if ((keys['Enter'] || keys['NumpadEnter']) || titleClick) {
@@ -88,7 +88,7 @@ function loop(timestamp) {
       }
       if (!keys['Escape'] && gs) gs._pauseBuf = false;
       // ─── PAUSA CON CLIC EN BOTÓN ───
-      if (mouse.down && !gs._pauseClickBuf && gs._pauseBtn) {
+      if ((mouse.down || pointerPressed) && !gs._pauseClickBuf && gs._pauseBtn) {
         const b = gs._pauseBtn;
         if (mouse.x >= b.x && mouse.x <= b.x + b.w && mouse.y >= b.y && mouse.y <= b.y + b.h) {
           gs._pauseClickBuf = true;
@@ -96,14 +96,14 @@ function loop(timestamp) {
           if (!gs.paused && gs.player) gs.player.fireCooldown = 0.15;
         }
       }
-      if (!mouse.down && gs) gs._pauseClickBuf = false;
+      if (!mouse.down && !pointerPressed && gs) gs._pauseClickBuf = false;
       // Si está pausado, solo renderiza (sin actualizar) y muestra el overlay
       if (gs.paused) {
         renderGame(gs);
         drawPauseOverlay(gs);
 
         // ─── CLIC EN MENÚ DE PAUSA ───
-        if (mouse.down && !gs._pauseClickBuf2) {
+        if ((mouse.down || pointerPressed) && !gs._pauseClickBuf2) {
           gs._pauseClickBuf2 = true;
           let handled = false;
 
@@ -154,7 +154,7 @@ function loop(timestamp) {
             }
           }
         }
-        if (!mouse.down) gs._pauseClickBuf2 = false;
+        if (!mouse.down && !pointerPressed) gs._pauseClickBuf2 = false;
 
         break;
       }
@@ -250,7 +250,7 @@ function loop(timestamp) {
       // ─── BOTONES: "PLAY AGAIN" Y "MENU" ───
       const bx  = LOGICAL_W/2-140, by =310, bw=280, bh=44;
       const bx2 = LOGICAL_W/2-140, by2=368, bw2=280, bh2=44;
-      if (mouse.down && !gs._clickBuf) {
+      if ((mouse.down || pointerPressed) && !gs._clickBuf) {
         if (mouse.x>bx && mouse.x<bx+bw && mouse.y>by && mouse.y<by+bh) {
           gs._clickBuf = true;
           if (meteorEvent.triggered) resetMeteorEvent();
@@ -264,9 +264,12 @@ function loop(timestamp) {
           gs.state = 'title';
         }
       }
-      if (!mouse.down && gs) gs._clickBuf = false;
+      if (!mouse.down && !pointerPressed && gs) gs._clickBuf = false;
       break;
   }
+
+  // ─── RESET POINTER FLAG ───
+  pointerPressed = false;
 }
 
 // ─── INICIAR EL BUCLE PRINCIPAL ───

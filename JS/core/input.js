@@ -19,6 +19,7 @@ function updateDeviceFlags() {
 }
 
 // ─── [NEW] TOUCH CONTROLS STATE ───
+let pointerPressed = false;                   // True por 1 frame al tocar la pantalla
 let touchShooting = false;                    // True mientras se toca el botón FIRE
 const pendingKeyRelease = [];                 // Teclas momentáneas (Q=arma, R=recarga) a liberar en 1 frame
 // Estado del joystick virtual
@@ -135,6 +136,7 @@ function handlePointerDown(e) {
 
   if (!audioInit) initAudio();
   updateDeviceFlags();
+  pointerPressed = true;
 
   // Joystick (zona izquierda)
   if (dist(p.x, p.y, JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y) < JOYSTICK_OUTER_R + 10) {
