@@ -20,6 +20,7 @@
   let _lastTs = 0;
   // Fase de animación decorativa de las tarjetas
   let _cardPhase = 0;
+  let _selectBtn = null;                        // Botón "SELECCIONAR" (bounds)
 
   // ─── PANTALLA DE SELECCIÓN DE MAPA ───
   // Dibuja la interfaz con dos tarjetas (Ciudad Abandonada y Bus en Movimiento),
@@ -171,6 +172,20 @@
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = '14px monospace';
     ctx.fillText('Click to select   |   ENTER to confirm   |   1 / 2 keys', LOGICAL_W/2, LOGICAL_H - 20);
+
+    // ─── BOTÓN "SELECCIONAR" ───
+    const sbw = 240, sbh = 48;
+    const sbx = LOGICAL_W/2 - sbw/2, sby = 385;
+    const sHover = mouse.x > sbx && mouse.x < sbx+sbw && mouse.y > sby && mouse.y < sby+sbh;
+    ctx.fillStyle = sHover ? '#008800' : '#005500';
+    ctx.fillRect(sbx, sby, sbw, sbh);
+    ctx.strokeStyle = '#00cc44';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(sbx, sby, sbw, sbh);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText('SELECCIONAR', LOGICAL_W/2, sby + 32);
+    _selectBtn = { x: sbx, y: sby, w: sbw, h: sbh };
   }
 
   // ─── MANEJO DE ENTRADA EN SELECCIÓN ───
@@ -188,7 +203,7 @@
 
     // ─── SELECCIÓN CON CLIC DEL MOUSE ───
     // Detecta clic dentro de cada tarjeta y actualiza _hovered
-    if (mouse.down && !gs._clickBuf) {
+    if ((mouse.down || pointerPressed) && !gs._clickBuf) {
       for (let i = 0; i < 2; i++) {
         const cx = startX + i * (cardW + gap);
         if (mouse.x > cx && mouse.x < cx + cardW && mouse.y > cardY && mouse.y < cardY + cardH) {
@@ -200,6 +215,17 @@
           break;
         }
       }
+    }
+
+    // ─── BOTÓN "SELECCIONAR" ───
+    if ((mouse.down || pointerPressed) && !gs._clickBuf && _selectBtn &&
+        mouse.x > _selectBtn.x && mouse.x < _selectBtn.x + _selectBtn.w &&
+        mouse.y > _selectBtn.y && mouse.y < _selectBtn.y + _selectBtn.h) {
+      _selectedMap = _hovered;
+      _mapConfirmed = true;
+      gs._clickBuf = true;
+      gs = createGameState();
+      startGame();
     }
 
     // ─── CONFIRMACIÓN CON ENTER ───
@@ -257,11 +283,12 @@
       _lastTs = timestamp;
       ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
       if (!gs) gs = createGameState();
-      if (_portraitBlock) { drawOrientationOverlay(); return; }
+      if (_portraitBlock) { drawOrientationOverlay(); pointerPressed = false; return; }
       drawMapSelectScreen();
       handleMapSelectInput(dt);
-      if (!mouse.down && gs) gs._clickBuf = false;
+      if (!mouse.down && !pointerPressed && gs) gs._clickBuf = false;
       if (!(keys['Enter'] || keys['NumpadEnter']) && gs) gs._enterBuf = false;
+      pointerPressed = false;
       return;
     }
     _origLoop(timestamp);
