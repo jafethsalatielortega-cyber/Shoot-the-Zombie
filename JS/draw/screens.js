@@ -2,6 +2,9 @@
 // Dibuja la pantalla principal del juego con el título, fondo decorativo y mensajes
 // Incluye siluetas de zombies animadas, edificios, manchas de sangre decorativas y el título
 // El mensaje "PRESS ENTER TO START" parpadea para indicar la acción esperada
+// Variable para almacenar el botón táctil "JUGAR" (solo visible en móvil)
+let _titlePlayBtn = null;
+
 function drawTitleScreen() {
   // Obtiene el tiempo actual en segundos para animaciones
   const t = Date.now()/1000;
@@ -94,6 +97,21 @@ function drawTitleScreen() {
   ctx.fillStyle = `rgba(255,200,50,${0.5 + pulse*0.5})`;
   ctx.font = 'bold 22px monospace';
   ctx.fillText('PRESS ENTER TO START', LOGICAL_W/2, 390);
+
+  // ─── BOTÓN "JUGAR" ───
+  const bw = 200, bh = 52;
+  const bx = LOGICAL_W/2 - bw/2, by = 430;
+  const hover = mouse.x > bx && mouse.x < bx+bw && mouse.y > by && mouse.y < by+bh;
+  ctx.fillStyle = hover ? '#cc0000' : '#880000';
+  ctx.fillRect(bx, by, bw, bh);
+  ctx.strokeStyle = '#ff4444';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(bx, by, bw, bh);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('JUGAR', LOGICAL_W/2, by + 34);
+  _titlePlayBtn = { x: bx, y: by, w: bw, h: bh };
 
   // Restablece propiedades por defecto
   ctx.shadowBlur = 0;

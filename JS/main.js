@@ -53,7 +53,10 @@ function loop(timestamp) {
     case 'title':
       if (isPortraitBlock) { drawOrientationOverlay(); break; }
       drawTitleScreen();
-      if ((keys['Enter'] || keys['NumpadEnter']) || mouse.down) {
+      const titleClick = mouse.down && _titlePlayBtn &&
+        mouse.x > _titlePlayBtn.x && mouse.x < _titlePlayBtn.x + _titlePlayBtn.w &&
+        mouse.y > _titlePlayBtn.y && mouse.y < _titlePlayBtn.y + _titlePlayBtn.h;
+      if ((keys['Enter'] || keys['NumpadEnter']) || titleClick) {
         if (!gs._enterBuf) {
           gs._enterBuf = true;
           startGame();
