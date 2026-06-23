@@ -21,6 +21,7 @@ function updateDeviceFlags() {
 // ─── [NEW] TOUCH CONTROLS STATE ───
 let pointerPressed = false;                   // True por 1 frame al tocar la pantalla
 let touchShooting = false;                    // True mientras se toca el botón FIRE
+let sprintToggled = false;                    // Sprint toggle (true = corriendo)
 const pendingKeyRelease = [];                 // Teclas momentáneas (Q=arma, R=recarga) a liberar en 1 frame
 // Estado del joystick virtual
 let joystickActive = false;
@@ -40,6 +41,7 @@ let aimY = LOGICAL_H / 2;
 function clearKeys() {
   for (const k in keys) keys[k] = false;
   touchShooting = false;
+  sprintToggled = false;
 }
 
 // ─── [NEW] MOMENTARY KEY HELPERS ───
@@ -165,10 +167,11 @@ function handlePointerDown(e) {
     return;
   }
 
-  // Botón SPRINT
+  // Botón SPRINT (toggle)
   if (dist(p.x, p.y, BTN_SPRINT_X, BTN_SPRINT_Y) < BTN_SPRINT_R + 12) {
     touches[id]._btn = 'sprint';
-    keys['ShiftLeft'] = true;
+    sprintToggled = !sprintToggled;
+    keys['ShiftLeft'] = sprintToggled;
     return;
   }
 
@@ -237,9 +240,6 @@ function handlePointerUp(e) {
     }
     if (touch._btn === 'jump') {
       keys['Space'] = false;
-    }
-    if (touch._btn === 'sprint') {
-      keys['ShiftLeft'] = false;
     }
   }
 

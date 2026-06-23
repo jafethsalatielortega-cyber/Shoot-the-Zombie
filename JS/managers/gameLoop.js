@@ -22,11 +22,19 @@ const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 function updatePlaying(gs, dt) {
   const p = gs.player;
 
-  // ─── TOUCH: LIBERAR TECLAS MOMENTÁNEAS ───
-  for (let i = pendingKeyRelease.length - 1; i >= 0; i--) {
-    keys[pendingKeyRelease[i]] = false;
+  // ─── [TOUCH] JOYSTICK AIM ───
+  // En teléfono, el jugador apunta hacia donde apunta el joystick
+  if (showTouchControls && p) {
+    if (joystickActive) {
+      const aimSens = 20;
+      mouse.x = p.x - gs.camX + joystickKnobX * aimSens;
+      mouse.y = p.y - 20 + (gs.busCamY || 0) + joystickKnobY * aimSens;
+    } else {
+      // Por defecto: apunta hacia donde mira el jugador
+      mouse.x = p.x - gs.camX + p.dir * 100;
+      mouse.y = p.y - 20 + (gs.busCamY || 0);
+    }
   }
-  pendingKeyRelease.length = 0;
 
 // ─── TEMPORIZADORES GENERALES ───
   // Todos los contadores que disminuyen con el tiempo se actualizan aquí.
@@ -778,6 +786,14 @@ function updatePlaying(gs, dt) {
   spawnAsh();                                            // Partículas de ceniza / polvo ambiental
   updateParticles(dt);                                   // Actualiza partículas visuales
   updateFloatTexts(dt);                                  // Actualiza textos flotantes (daño, power-ups)
+
+  // ─── [TOUCH] LIBERAR TECLAS MOMENTÁNEAS ───
+  // Se procesa al FINAL para que KeyQ (cambiar arma) y KeyR (recargar)
+  // estén activas durante todo el frame del juego
+  for (let i = pendingKeyRelease.length - 1; i >= 0; i--) {
+    keys[pendingKeyRelease[i]] = false;
+  }
+  pendingKeyRelease.length = 0;
 }
 
 // ─── INTENTAR DISPARO ───
