@@ -194,6 +194,14 @@ function loop(timestamp) {
               if (typeof masterVolume !== 'undefined') { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); try { playTone(800, 800, 'sine', 0.08, 0.15); } catch(e){} }
               handled = true;
             }
+            // ─── BUTTON LAYOUT (dentro de opciones expandidas) ───
+            if (!handled && gs._pauseLayoutBtn &&
+                mouse.x > gs._pauseLayoutBtn.x && mouse.x < gs._pauseLayoutBtn.x + gs._pauseLayoutBtn.w &&
+                mouse.y > gs._pauseLayoutBtn.y && mouse.y < gs._pauseLayoutBtn.y + gs._pauseLayoutBtn.h) {
+              gs._layoutEditorOpen = true;
+              gs._layoutEditIdx = 0;
+              handled = true;
+            }
           }
 
           if (!handled) {
@@ -211,14 +219,6 @@ function loop(timestamp) {
                   mouse.x > btns.options.x && mouse.x < btns.options.x + btns.options.w &&
                   mouse.y > btns.options.y && mouse.y < btns.options.y + btns.options.h) {
                 gs._pauseOptionsOpen = !gs._pauseOptionsOpen;
-                handled = true;
-              }
-              // ─── BUTTON LAYOUT (dentro de opciones expandidas) ───
-              if (!handled && gs._pauseOptionsOpen && gs._pauseLayoutBtn &&
-                  mouse.x > gs._pauseLayoutBtn.x && mouse.x < gs._pauseLayoutBtn.x + gs._pauseLayoutBtn.w &&
-                  mouse.y > gs._pauseLayoutBtn.y && mouse.y < gs._pauseLayoutBtn.y + gs._pauseLayoutBtn.h) {
-                gs._layoutEditorOpen = true;
-                gs._layoutEditIdx = 0;
                 handled = true;
               }
               // ─── VOLVER AL MENÚ ───

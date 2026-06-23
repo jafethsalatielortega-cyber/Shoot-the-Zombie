@@ -98,20 +98,22 @@ function drawTitleScreen() {
   ctx.font = 'bold 22px monospace';
   ctx.fillText('PRESS ENTER TO START', LOGICAL_W/2, 390);
 
-  // ─── BOTÓN "JUGAR" ───
-  const bw = 200, bh = 52;
-  const bx = LOGICAL_W/2 - bw/2, by = 430;
-  const hover = mouse.x > bx && mouse.x < bx+bw && mouse.y > by && mouse.y < by+bh;
-  ctx.fillStyle = hover ? '#cc0000' : '#880000';
-  ctx.fillRect(bx, by, bw, bh);
-  ctx.strokeStyle = '#ff4444';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(bx, by, bw, bh);
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('JUGAR', LOGICAL_W/2, by + 34);
-  _titlePlayBtn = { x: bx, y: by, w: bw, h: bh };
+  // ─── BOTÓN "JUGAR" (solo en móvil) ───
+  if (showTouchControls) {
+    const bw = 200, bh = 52;
+    const bx = LOGICAL_W/2 - bw/2, by = 430;
+    const hover = mouse.x > bx && mouse.x < bx+bw && mouse.y > by && mouse.y < by+bh;
+    ctx.fillStyle = hover ? '#cc0000' : '#880000';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#ff4444';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 22px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('JUGAR', LOGICAL_W/2, by + 34);
+    _titlePlayBtn = { x: bx, y: by, w: bw, h: bh };
+  }
 
   // Restablece propiedades por defecto
   ctx.shadowBlur = 0;

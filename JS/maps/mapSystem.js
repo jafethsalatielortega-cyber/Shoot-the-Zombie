@@ -173,19 +173,21 @@
     ctx.font = '14px monospace';
     ctx.fillText('Click to select   |   ENTER to confirm   |   1 / 2 keys', LOGICAL_W/2, LOGICAL_H - 20);
 
-    // ─── BOTÓN "SELECCIONAR" ───
-    const sbw = 240, sbh = 48;
-    const sbx = LOGICAL_W/2 - sbw/2, sby = 385;
-    const sHover = mouse.x > sbx && mouse.x < sbx+sbw && mouse.y > sby && mouse.y < sby+sbh;
-    ctx.fillStyle = sHover ? '#008800' : '#005500';
-    ctx.fillRect(sbx, sby, sbw, sbh);
-    ctx.strokeStyle = '#00cc44';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(sbx, sby, sbw, sbh);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 20px monospace';
-    ctx.fillText('SELECCIONAR', LOGICAL_W/2, sby + 32);
-    _selectBtn = { x: sbx, y: sby, w: sbw, h: sbh };
+    // ─── BOTÓN "SELECCIONAR" (solo en móvil) ───
+    if (showTouchControls) {
+      const sbw = 240, sbh = 48;
+      const sbx = LOGICAL_W/2 - sbw/2, sby = 385;
+      const sHover = mouse.x > sbx && mouse.x < sbx+sbw && mouse.y > sby && mouse.y < sby+sbh;
+      ctx.fillStyle = sHover ? '#008800' : '#005500';
+      ctx.fillRect(sbx, sby, sbw, sbh);
+      ctx.strokeStyle = '#00cc44';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(sbx, sby, sbw, sbh);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 20px monospace';
+      ctx.fillText('SELECCIONAR', LOGICAL_W/2, sby + 32);
+      _selectBtn = { x: sbx, y: sby, w: sbw, h: sbh };
+    }
   }
 
   // ─── MANEJO DE ENTRADA EN SELECCIÓN ───
