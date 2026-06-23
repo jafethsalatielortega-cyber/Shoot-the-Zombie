@@ -208,7 +208,8 @@ function drawHUD(gs) {
   const gWidth = LOGICAL_W;
   const gHeight = LOGICAL_H;
   // Solo dibuja el puntero si el mouse está dentro de los límites de la pantalla
-  if (cx >= 0 && cx <= gWidth && cy >= 0 && cy <= gHeight) {
+  // y NO estamos en controles táctiles (el joystick ya guía la puntería)
+  if (cx >= 0 && cx <= gWidth && cy >= 0 && cy <= gHeight && !showTouchControls) {
     ctx.save();
     // Traslada el origen al centro del cursor
     ctx.translate(cx, cy);

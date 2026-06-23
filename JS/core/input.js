@@ -206,7 +206,10 @@ function handlePointerMove(e) {
   const p = getCanvasCoords(e.clientX, e.clientY);
   const id = e.pointerId;
 
-  touches[id] = { x: p.x, y: p.y, active: true };
+  // Preserva _btn existente (botón original del pointerdown) para que
+  // handlePointerUp pueda identificar qué botón se soltó
+  const prev = touches[id] || {};
+  touches[id] = { x: p.x, y: p.y, active: true, _btn: prev._btn };
 
   // Arrastre del joystick
   if (id === joystickPointer && joystickActive) {
@@ -250,6 +253,7 @@ function handlePointerUp(e) {
     joystickKnobY = 0;
     keys['KeyA'] = false;
     keys['KeyD'] = false;
+    keys['Space'] = false;
   }
 
   if (id === aimPointer) {

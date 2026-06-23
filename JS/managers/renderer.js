@@ -261,7 +261,7 @@ function drawTouchGamepad() {
 
   // ─── INDICADOR DE PUNTERÍA TÁCTIL ───
   // Pequeña cruceta que muestra hacia dónde apunta el jugador con el toque
-  if (aimPointer >= 0) {
+  if (aimPointer >= 0 && !showTouchControls) {
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 1;
     // Línea horizontal
