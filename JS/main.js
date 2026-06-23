@@ -84,6 +84,7 @@ function loop(timestamp) {
       if (keys['Escape'] && !gs._pauseBuf) {
         gs._pauseBuf = true;
         gs.paused = !gs.paused;
+        if (!gs.paused) { gs._layoutEditorOpen = false; gs._pauseOptionsOpen = false; }
         if (!gs.paused && gs.player) gs.player.fireCooldown = 0.15;
       }
       if (!keys['Escape'] && gs) gs._pauseBuf = false;
@@ -93,6 +94,7 @@ function loop(timestamp) {
         if (mouse.x >= b.x && mouse.x <= b.x + b.w && mouse.y >= b.y && mouse.y <= b.y + b.h) {
           gs._pauseClickBuf = true;
           gs.paused = !gs.paused;
+          if (!gs.paused) { gs._layoutEditorOpen = false; gs._pauseOptionsOpen = false; }
           if (!gs.paused && gs.player) gs.player.fireCooldown = 0.15;
         }
       }
@@ -100,6 +102,76 @@ function loop(timestamp) {
       // Si está pausado, solo renderiza (sin actualizar) y muestra el overlay
       if (gs.paused) {
         renderGame(gs);
+
+        // ─── LAYOUT EDITOR ───
+        if (gs._layoutEditorOpen) {
+          drawLayoutEditor(gs);
+          if ((mouse.down || pointerPressed) && !gs._layoutClickBuf) {
+            gs._layoutClickBuf = true;
+            const idx = gs._layoutEditIdx || 0;
+            const bp = getBtnProps(idx);
+
+            // ─── SELECTOR DE BOTÓN ───
+            for (let i = 0; i < 5; i++) {
+              const b = gs['_layoutBtn_' + i];
+              if (b && mouse.x > b.x && mouse.x < b.x + b.w && mouse.y > b.y && mouse.y < b.y + b.h) {
+                gs._layoutEditIdx = i;
+                break;
+              }
+            }
+
+            // ─── FLECHA IZQUIERDA (X-5) ───
+            if (gs._layoutArrowL && mouse.x > gs._layoutArrowL.x && mouse.x < gs._layoutArrowL.x + gs._layoutArrowL.w &&
+                mouse.y > gs._layoutArrowL.y && mouse.y < gs._layoutArrowL.y + gs._layoutArrowL.h) {
+              setBtnProps(idx, bp.x - 5, bp.y, bp.r);
+            }
+            // ─── FLECHA DERECHA (X+5) ───
+            if (gs._layoutArrowR && mouse.x > gs._layoutArrowR.x && mouse.x < gs._layoutArrowR.x + gs._layoutArrowR.w &&
+                mouse.y > gs._layoutArrowR.y && mouse.y < gs._layoutArrowR.y + gs._layoutArrowR.h) {
+              setBtnProps(idx, bp.x + 5, bp.y, bp.r);
+            }
+            // ─── FLECHA ARRIBA (Y-5) ───
+            if (gs._layoutArrowU && mouse.x > gs._layoutArrowU.x && mouse.x < gs._layoutArrowU.x + gs._layoutArrowU.w &&
+                mouse.y > gs._layoutArrowU.y && mouse.y < gs._layoutArrowU.y + gs._layoutArrowU.h) {
+              setBtnProps(idx, bp.x, bp.y - 5, bp.r);
+            }
+            // ─── FLECHA ABAJO (Y+5) ───
+            if (gs._layoutArrowD && mouse.x > gs._layoutArrowD.x && mouse.x < gs._layoutArrowD.x + gs._layoutArrowD.w &&
+                mouse.y > gs._layoutArrowD.y && mouse.y < gs._layoutArrowD.y + gs._layoutArrowD.h) {
+              setBtnProps(idx, bp.x, bp.y + 5, bp.r);
+            }
+            // ─── RADIO − (r-2) ───
+            if (gs._layoutRadiusMinus && mouse.x > gs._layoutRadiusMinus.x && mouse.x < gs._layoutRadiusMinus.x + gs._layoutRadiusMinus.w &&
+                mouse.y > gs._layoutRadiusMinus.y && mouse.y < gs._layoutRadiusMinus.y + gs._layoutRadiusMinus.h) {
+              setBtnProps(idx, bp.x, bp.y, Math.max(8, bp.r - 2));
+            }
+            // ─── RADIO + (r+2) ───
+            if (gs._layoutRadiusPlus && mouse.x > gs._layoutRadiusPlus.x && mouse.x < gs._layoutRadiusPlus.x + gs._layoutRadiusPlus.w &&
+                mouse.y > gs._layoutRadiusPlus.y && mouse.y < gs._layoutRadiusPlus.y + gs._layoutRadiusPlus.h) {
+              setBtnProps(idx, bp.x, bp.y, Math.min(80, bp.r + 2));
+            }
+            // ─── SAVE ───
+            if (gs._layoutSave && mouse.x > gs._layoutSave.x && mouse.x < gs._layoutSave.x + gs._layoutSave.w &&
+                mouse.y > gs._layoutSave.y && mouse.y < gs._layoutSave.y + gs._layoutSave.h) {
+              saveTouchLayout();
+              gs._layoutEditorOpen = false;
+              gs._pauseOptionsOpen = false;
+            }
+            // ─── RESET ───
+            if (gs._layoutReset && mouse.x > gs._layoutReset.x && mouse.x < gs._layoutReset.x + gs._layoutReset.w &&
+                mouse.y > gs._layoutReset.y && mouse.y < gs._layoutReset.y + gs._layoutReset.h) {
+              resetTouchLayout();
+            }
+            // ─── BACK ───
+            if (gs._layoutBack && mouse.x > gs._layoutBack.x && mouse.x < gs._layoutBack.x + gs._layoutBack.w &&
+                mouse.y > gs._layoutBack.y && mouse.y < gs._layoutBack.y + gs._layoutBack.h) {
+              gs._layoutEditorOpen = false;
+            }
+          }
+          if (!mouse.down && !pointerPressed) gs._layoutClickBuf = false;
+          break;
+        }
+
         drawPauseOverlay(gs);
 
         // ─── CLIC EN MENÚ DE PAUSA ───
@@ -139,6 +211,14 @@ function loop(timestamp) {
                   mouse.x > btns.options.x && mouse.x < btns.options.x + btns.options.w &&
                   mouse.y > btns.options.y && mouse.y < btns.options.y + btns.options.h) {
                 gs._pauseOptionsOpen = !gs._pauseOptionsOpen;
+                handled = true;
+              }
+              // ─── BUTTON LAYOUT (dentro de opciones expandidas) ───
+              if (!handled && gs._pauseOptionsOpen && gs._pauseLayoutBtn &&
+                  mouse.x > gs._pauseLayoutBtn.x && mouse.x < gs._pauseLayoutBtn.x + gs._pauseLayoutBtn.w &&
+                  mouse.y > gs._pauseLayoutBtn.y && mouse.y < gs._pauseLayoutBtn.y + gs._pauseLayoutBtn.h) {
+                gs._layoutEditorOpen = true;
+                gs._layoutEditIdx = 0;
                 handled = true;
               }
               // ─── VOLVER AL MENÚ ───

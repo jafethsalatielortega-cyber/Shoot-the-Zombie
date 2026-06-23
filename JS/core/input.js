@@ -107,17 +107,69 @@ document.addEventListener('keyup', e => {
 // teléfonos, tablets, laptops con pantalla táctil, lápiz stylus.
 // Traduce cada toque/arrastre a los controles del juego.
 
-// ─── ZONAS DE CONTROL (en coordenadas lógicas del canvas) ───
-const JOYSTICK_CENTER_X = 110;
-const JOYSTICK_CENTER_Y = 390;
-const JOYSTICK_OUTER_R = 70;
-const JOYSTICK_CLAMP = 60;
-const BTN_SHOOT_X = 1170, BTN_SHOOT_Y = 390, BTN_SHOOT_R = 36;
-const BTN_JUMP_X = 1170, BTN_JUMP_Y = 310, BTN_JUMP_R = 28;
-const BTN_SPRINT_X = 1100, BTN_SPRINT_Y = 390, BTN_SPRINT_R = 24;
-const BTN_SWITCH_X = 1240, BTN_SWITCH_Y = 390, BTN_SWITCH_R = 24;
-const BTN_RELOAD_X = 1170, BTN_RELOAD_Y = 460, BTN_RELOAD_R = 22;
-const AIM_ZONE_X1 = 200, AIM_ZONE_X2 = 1050;
+// ─── ZONAS DE CONTROL (en coordenadas lógicas del canvas, editables) ───
+// Valores por defecto (se pueden personalizar desde el menú de opciones)
+let JOYSTICK_CENTER_X = 110;
+let JOYSTICK_CENTER_Y = 390;
+let JOYSTICK_OUTER_R = 80;
+let JOYSTICK_CLAMP = 65;
+let BTN_SHOOT_X = 1100, BTN_SHOOT_Y = 390, BTN_SHOOT_R = 46;
+let BTN_JUMP_X = 1100, BTN_JUMP_Y = 295, BTN_JUMP_R = 38;
+let BTN_SPRINT_X = 1010, BTN_SPRINT_Y = 390, BTN_SPRINT_R = 32;
+let BTN_SWITCH_X = 1200, BTN_SWITCH_Y = 390, BTN_SWITCH_R = 32;
+let BTN_RELOAD_X = 1100, BTN_RELOAD_Y = 465, BTN_RELOAD_R = 30;
+let AIM_ZONE_X1 = 200, AIM_ZONE_X2 = 1050;
+
+// ─── [NEW] TOUCH LAYOUT PERSISTENCE ───
+function saveTouchLayout() {
+  try { localStorage.setItem('zombies_touch_layout', JSON.stringify({
+    JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y, JOYSTICK_OUTER_R, JOYSTICK_CLAMP,
+    BTN_SHOOT_X, BTN_SHOOT_Y, BTN_SHOOT_R,
+    BTN_JUMP_X, BTN_JUMP_Y, BTN_JUMP_R,
+    BTN_SPRINT_X, BTN_SPRINT_Y, BTN_SPRINT_R,
+    BTN_SWITCH_X, BTN_SWITCH_Y, BTN_SWITCH_R,
+    BTN_RELOAD_X, BTN_RELOAD_Y, BTN_RELOAD_R,
+    AIM_ZONE_X1, AIM_ZONE_X2,
+  })); } catch(e) {}
+}
+function loadTouchLayout() {
+  try {
+    const s = localStorage.getItem('zombies_touch_layout');
+    if (!s) return;
+    const d = JSON.parse(s);
+    if (d.JOYSTICK_CENTER_X !== undefined) JOYSTICK_CENTER_X = d.JOYSTICK_CENTER_X;
+    if (d.JOYSTICK_CENTER_Y !== undefined) JOYSTICK_CENTER_Y = d.JOYSTICK_CENTER_Y;
+    if (d.JOYSTICK_OUTER_R !== undefined) JOYSTICK_OUTER_R = d.JOYSTICK_OUTER_R;
+    if (d.JOYSTICK_CLAMP !== undefined) JOYSTICK_CLAMP = d.JOYSTICK_CLAMP;
+    if (d.BTN_SHOOT_X !== undefined) BTN_SHOOT_X = d.BTN_SHOOT_X;
+    if (d.BTN_SHOOT_Y !== undefined) BTN_SHOOT_Y = d.BTN_SHOOT_Y;
+    if (d.BTN_SHOOT_R !== undefined) BTN_SHOOT_R = d.BTN_SHOOT_R;
+    if (d.BTN_JUMP_X !== undefined) BTN_JUMP_X = d.BTN_JUMP_X;
+    if (d.BTN_JUMP_Y !== undefined) BTN_JUMP_Y = d.BTN_JUMP_Y;
+    if (d.BTN_JUMP_R !== undefined) BTN_JUMP_R = d.BTN_JUMP_R;
+    if (d.BTN_SPRINT_X !== undefined) BTN_SPRINT_X = d.BTN_SPRINT_X;
+    if (d.BTN_SPRINT_Y !== undefined) BTN_SPRINT_Y = d.BTN_SPRINT_Y;
+    if (d.BTN_SPRINT_R !== undefined) BTN_SPRINT_R = d.BTN_SPRINT_R;
+    if (d.BTN_SWITCH_X !== undefined) BTN_SWITCH_X = d.BTN_SWITCH_X;
+    if (d.BTN_SWITCH_Y !== undefined) BTN_SWITCH_Y = d.BTN_SWITCH_Y;
+    if (d.BTN_SWITCH_R !== undefined) BTN_SWITCH_R = d.BTN_SWITCH_R;
+    if (d.BTN_RELOAD_X !== undefined) BTN_RELOAD_X = d.BTN_RELOAD_X;
+    if (d.BTN_RELOAD_Y !== undefined) BTN_RELOAD_Y = d.BTN_RELOAD_Y;
+    if (d.BTN_RELOAD_R !== undefined) BTN_RELOAD_R = d.BTN_RELOAD_R;
+    if (d.AIM_ZONE_X1 !== undefined) AIM_ZONE_X1 = d.AIM_ZONE_X1;
+    if (d.AIM_ZONE_X2 !== undefined) AIM_ZONE_X2 = d.AIM_ZONE_X2;
+  } catch(e) {}
+}
+function resetTouchLayout() {
+  JOYSTICK_CENTER_X = 110; JOYSTICK_CENTER_Y = 390; JOYSTICK_OUTER_R = 80; JOYSTICK_CLAMP = 65;
+  BTN_SHOOT_X = 1100; BTN_SHOOT_Y = 390; BTN_SHOOT_R = 46;
+  BTN_JUMP_X = 1100; BTN_JUMP_Y = 295; BTN_JUMP_R = 38;
+  BTN_SPRINT_X = 1010; BTN_SPRINT_Y = 390; BTN_SPRINT_R = 32;
+  BTN_SWITCH_X = 1200; BTN_SWITCH_Y = 390; BTN_SWITCH_R = 32;
+  BTN_RELOAD_X = 1100; BTN_RELOAD_Y = 465; BTN_RELOAD_R = 30;
+  AIM_ZONE_X1 = 200; AIM_ZONE_X2 = 1050;
+  saveTouchLayout();
+}
 
 function getCanvasCoords(px, py) {
   const rect = canvas.getBoundingClientRect();
@@ -253,7 +305,6 @@ function handlePointerUp(e) {
     joystickKnobY = 0;
     keys['KeyA'] = false;
     keys['KeyD'] = false;
-    keys['Space'] = false;
   }
 
   if (id === aimPointer) {
@@ -274,9 +325,7 @@ function updateJoystickKeys() {
     keys['KeyA'] = false;
     keys['KeyD'] = false;
   }
-  if (joystickKnobY < -25) {
-    keys['Space'] = true;
-  }
+  // El salto SOLO con el botón JUMP, no con el joystick
 }
 
 // ─── [NEW] GAMEPAD API (DUALSENSE / XBOX) ───
@@ -355,3 +404,6 @@ canvas.addEventListener('pointerdown', handlePointerDown);
 canvas.addEventListener('pointermove', handlePointerMove);
 canvas.addEventListener('pointerup', handlePointerUp);
 canvas.addEventListener('pointercancel', handlePointerCancel);
+
+// ─── CARGA DE LAYOUT PERSONALIZADO ───
+loadTouchLayout();

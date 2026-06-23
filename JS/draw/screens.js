@@ -322,7 +322,7 @@ function drawPauseOverlay(gs) {
   const optionsOpen = gs._pauseOptionsOpen === true;
 
   // ─── BOTÓN: REANUDAR ───
-  const by1 = 180;
+  const by1 = 160;
   const hov1 = mouse.x > bx && mouse.x < bx+bw && mouse.y > by1 && mouse.y < by1+bh;
   ctx.fillStyle = hov1 ? '#6a4000' : '#3a2200';
   ctx.beginPath(); ctx.roundRect(bx, by1, bw, bh, 6); ctx.fill();
@@ -333,8 +333,8 @@ function drawPauseOverlay(gs) {
   ctx.fillText('▶  REANUDAR', LOGICAL_W / 2, by1 + 29);
 
   // ─── BOTÓN: OPCIONES ───
-  const by2 = by1 + bh + 12;
-  const optH = optionsOpen ? 90 : bh;
+  const by2 = by1 + bh + 8;
+  const optH = optionsOpen ? 145 : bh;
   const hov2 = mouse.x > bx && mouse.x < bx+bw && mouse.y > by2 && mouse.y < by2+optH;
   ctx.fillStyle = hov2 ? '#2a4a3a' : '#1a2a1a';
   ctx.beginPath(); ctx.roundRect(bx, by2, bw, optH, 6); ctx.fill();
@@ -386,10 +386,22 @@ function drawPauseOverlay(gs) {
     // Guarda bounds de los botones de volumen para detección de clics
     gs._pauseVolMinus = { x: minusX, y: minusY, w: minusS, h: minusS };
     gs._pauseVolPlus = { x: plusX, y: plusY, w: minusS, h: minusS };
+
+    // ─── BOTÓN: BUTTON LAYOUT ───
+    const layoutBtnY = by2 + 97;
+    const hovLayout = mouse.x > bx && mouse.x < bx+bw && mouse.y > layoutBtnY && mouse.y < layoutBtnY+bh;
+    ctx.fillStyle = hovLayout ? '#2a4a6a' : '#1a2a3a';
+    ctx.beginPath(); ctx.roundRect(bx, layoutBtnY, bw, bh, 6); ctx.fill();
+    ctx.strokeStyle = '#4a8aff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(bx, layoutBtnY, bw, bh, 6); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 17px monospace';
+    ctx.fillText('🎮  BUTTON LAYOUT', LOGICAL_W / 2, layoutBtnY + 29);
+    gs._pauseLayoutBtn = { x: bx, y: layoutBtnY, w: bw, h: bh };
   }
 
   // ─── BOTÓN: VOLVER AL MENÚ ───
-  const by3 = by2 + optH + 12;
+  const by3 = by2 + optH + 8;
   const hov3 = mouse.x > bx && mouse.x < bx+bw && mouse.y > by3 && mouse.y < by3+bh;
   ctx.fillStyle = hov3 ? '#5a2a2a' : '#3a1a1a';
   ctx.beginPath(); ctx.roundRect(bx, by3, bw, bh, 6); ctx.fill();
@@ -405,6 +417,183 @@ function drawPauseOverlay(gs) {
     options: { x: bx, y: by2, w: bw, h: optH },
     menu: { x: bx, y: by3, w: bw, h: bh }
   };
+
+  ctx.restore();
+  ctx.textAlign = 'left';
+}
+
+// ─── [NEW] LAYOUT EDITOR ───
+// Permite al jugador mover y redimensionar los botones táctiles
+const _BTN_NAMES = ['shoot','jump','sprint','switch','reload'];
+const _BTN_LABELS = ['FIRE','JUMP','RUN','GUN','RLD'];
+const _BTN_PROPS = [
+  () => ({ x: BTN_SHOOT_X, y: BTN_SHOOT_Y, r: BTN_SHOOT_R }),
+  (x,y,r) => { BTN_SHOOT_X=x; BTN_SHOOT_Y=y; BTN_SHOOT_R=r; },
+  () => ({ x: BTN_JUMP_X, y: BTN_JUMP_Y, r: BTN_JUMP_R }),
+  (x,y,r) => { BTN_JUMP_X=x; BTN_JUMP_Y=y; BTN_JUMP_R=r; },
+  () => ({ x: BTN_SPRINT_X, y: BTN_SPRINT_Y, r: BTN_SPRINT_R }),
+  (x,y,r) => { BTN_SPRINT_X=x; BTN_SPRINT_Y=y; BTN_SPRINT_R=r; },
+  () => ({ x: BTN_SWITCH_X, y: BTN_SWITCH_Y, r: BTN_SWITCH_R }),
+  (x,y,r) => { BTN_SWITCH_X=x; BTN_SWITCH_Y=y; BTN_SWITCH_R=r; },
+  () => ({ x: BTN_RELOAD_X, y: BTN_RELOAD_Y, r: BTN_RELOAD_R }),
+  (x,y,r) => { BTN_RELOAD_X=x; BTN_RELOAD_Y=y; BTN_RELOAD_R=r; },
+];
+function getBtnProps(i) { return _BTN_PROPS[i*2](); }
+function setBtnProps(i, x, y, r) { _BTN_PROPS[i*2+1](x,y,r); }
+
+function drawLayoutEditor(gs) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+
+  ctx.textAlign = 'center';
+
+  // ─── TÍTULO ───
+  ctx.fillStyle = '#4aff8a';
+  ctx.font = 'bold 30px monospace';
+  ctx.fillText('BUTTON LAYOUT', LOGICAL_W/2, 55);
+
+  // ─── BOTONES DE SELECCIÓN ───
+  const idx = gs._layoutEditIdx || 0;
+  const selW = LOGICAL_W / 5;
+  ctx.font = 'bold 13px monospace';
+  for (let i = 0; i < 5; i++) {
+    const sx = i * selW, sy = 75, sw = selW - 4, sh = 28;
+    const sel = i === idx;
+    const hov = mouse.x > sx && mouse.x < sx+sw && mouse.y > sy && mouse.y < sy+sh;
+    ctx.fillStyle = sel ? '#4aff8a' : hov ? '#2a4a3a' : '#1a2a1a';
+    ctx.beginPath(); ctx.roundRect(sx+2, sy, sw, sh, 4); ctx.fill();
+    ctx.strokeStyle = sel ? '#4aff8a' : '#333';
+    ctx.lineWidth = sel ? 2 : 1;
+    ctx.beginPath(); ctx.roundRect(sx+2, sy, sw, sh, 4); ctx.stroke();
+    ctx.fillStyle = sel ? '#000' : '#ccc';
+    ctx.fillText(_BTN_LABELS[i], sx + sw/2 + 2, sy + 19);
+    // Guarda bounds
+    gs['_layoutBtn_' + i] = { x: sx+2, y: sy, w: sw, h: sh };
+  }
+
+  // ─── INFORMACIÓN DEL BOTÓN SELECCIONADO ───
+  const bp = getBtnProps(idx);
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px monospace';
+  ctx.fillText(_BTN_LABELS[idx] + '  X:' + bp.x + '  Y:' + bp.y + '  R:' + bp.r, LOGICAL_W/2, 120);
+
+  // ─── CONTROLES ───
+  // Flechas X (← X →)
+  const ctrY = 145, ctrGap = 80;
+  const ctrCX = LOGICAL_W / 2;
+  // ←
+  const lx = ctrCX - ctrGap - 22, ly = ctrY, lw = 44, lh = 30;
+  const hovL = mouse.x > lx && mouse.x < lx+lw && mouse.y > ly && mouse.y < ly+lh;
+  ctx.fillStyle = hovL ? '#555' : '#222';
+  ctx.beginPath(); ctx.roundRect(lx, ly, lw, lh, 4); ctx.fill();
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(lx, ly, lw, lh, 4); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
+  ctx.fillText('←', lx + lw/2, ly + 20);
+  gs._layoutArrowL = { x: lx, y: ly, w: lw, h: lh };
+  // X label
+  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
+  ctx.fillText('X', ctrCX, ctrY + 20);
+  // →
+  const rx = ctrCX + ctrGap - 22;
+  const hovR = mouse.x > rx && mouse.x < rx+lw && mouse.y > ly && mouse.y < ly+lh;
+  ctx.fillStyle = hovR ? '#555' : '#222';
+  ctx.beginPath(); ctx.roundRect(rx, ly, lw, lh, 4); ctx.fill();
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(rx, ly, lw, lh, 4); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('→', rx + lw/2, ly + 20);
+  gs._layoutArrowR = { x: rx, y: ly, w: lw, h: lh };
+
+  // Flechas Y (↑ Y ↓)
+  const ctrY2 = ctrY + 40;
+  // ↑
+  const ux = ctrCX - ctrGap - 22, uy = ctrY2;
+  const hovU = mouse.x > ux && mouse.x < ux+lw && mouse.y > uy && mouse.y < uy+lh;
+  ctx.fillStyle = hovU ? '#555' : '#222';
+  ctx.beginPath(); ctx.roundRect(ux, uy, lw, lh, 4); ctx.fill();
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(ux, uy, lw, lh, 4); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('↑', ux + lw/2, uy + 20);
+  gs._layoutArrowU = { x: ux, y: uy, w: lw, h: lh };
+  // Y label
+  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
+  ctx.fillText('Y', ctrCX, ctrY2 + 20);
+  // ↓
+  const dx2 = ctrCX + ctrGap - 22;
+  const hovD = mouse.x > dx2 && mouse.x < dx2+lw && mouse.y > uy && mouse.y < uy+lh;
+  ctx.fillStyle = hovD ? '#555' : '#222';
+  ctx.beginPath(); ctx.roundRect(dx2, uy, lw, lh, 4); ctx.fill();
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(dx2, uy, lw, lh, 4); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('↓', dx2 + lw/2, uy + 20);
+  gs._layoutArrowD = { x: dx2, y: uy, w: lw, h: lh };
+
+  // Radius controls (− R +)
+  const ctrY3 = ctrY2 + 40;
+  // −
+  const minX = ctrCX - ctrGap - 22, minY = ctrY3;
+  const hovMin = mouse.x > minX && mouse.x < minX+lw && mouse.y > minY && mouse.y < minY+lh;
+  ctx.fillStyle = hovMin ? '#553333' : '#331111';
+  ctx.beginPath(); ctx.roundRect(minX, minY, lw, lh, 4); ctx.fill();
+  ctx.strokeStyle = '#aa4444'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(minX, minY, lw, lh, 4); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('−', minX + lw/2, minY + 20);
+  gs._layoutRadiusMinus = { x: minX, y: minY, w: lw, h: lh };
+  // R label
+  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
+  ctx.fillText('R', ctrCX, ctrY3 + 20);
+  // +
+  const plusX = ctrCX + ctrGap - 22;
+  const hovPlus = mouse.x > plusX && mouse.x < plusX+lw && mouse.y > minY && mouse.y < minY+lh;
+  ctx.fillStyle = hovPlus ? '#335533' : '#112211';
+  ctx.beginPath(); ctx.roundRect(plusX, minY, lw, lh, 4); ctx.fill();
+  ctx.strokeStyle = '#44aa44'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(plusX, minY, lw, lh, 4); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('+', plusX + lw/2, minY + 20);
+  gs._layoutRadiusPlus = { x: plusX, y: minY, w: lw, h: lh };
+
+  // ─── BOTONES INFERIORES ───
+  const bBotY = 270;
+  const bBotW = 160, bBotH = 38, bBotGap = 20;
+  const bBotX1 = LOGICAL_W/2 - bBotW*1.5 - bBotGap;
+  const bBotX2 = LOGICAL_W/2 - bBotW/2;
+  const bBotX3 = LOGICAL_W/2 + bBotW/2 + bBotGap;
+
+  // SAVE
+  const hovSave = mouse.x > bBotX1 && mouse.x < bBotX1+bBotW && mouse.y > bBotY && mouse.y < bBotY+bBotH;
+  ctx.fillStyle = hovSave ? '#2a6a2a' : '#1a4a1a';
+  ctx.beginPath(); ctx.roundRect(bBotX1, bBotY, bBotW, bBotH, 6); ctx.fill();
+  ctx.strokeStyle = '#4aff8a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(bBotX1, bBotY, bBotW, bBotH, 6); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 16px monospace';
+  ctx.fillText('SAVE', bBotX1 + bBotW/2, bBotY + 25);
+  gs._layoutSave = { x: bBotX1, y: bBotY, w: bBotW, h: bBotH };
+
+  // RESET
+  const hovReset = mouse.x > bBotX2 && mouse.x < bBotX2+bBotW && mouse.y > bBotY && mouse.y < bBotY+bBotH;
+  ctx.fillStyle = hovReset ? '#5a4a2a' : '#3a2a1a';
+  ctx.beginPath(); ctx.roundRect(bBotX2, bBotY, bBotW, bBotH, 6); ctx.fill();
+  ctx.strokeStyle = '#ffb833'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(bBotX2, bBotY, bBotW, bBotH, 6); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('RESET', bBotX2 + bBotW/2, bBotY + 25);
+  gs._layoutReset = { x: bBotX2, y: bBotY, w: bBotW, h: bBotH };
+
+  // BACK
+  const hovBack = mouse.x > bBotX3 && mouse.x < bBotX3+bBotW && mouse.y > bBotY && mouse.y < bBotY+bBotH;
+  ctx.fillStyle = hovBack ? '#5a2a2a' : '#3a1a1a';
+  ctx.beginPath(); ctx.roundRect(bBotX3, bBotY, bBotW, bBotH, 6); ctx.fill();
+  ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(bBotX3, bBotY, bBotW, bBotH, 6); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('BACK', bBotX3 + bBotW/2, bBotY + 25);
+  gs._layoutBack = { x: bBotX3, y: bBotY, w: bBotW, h: bBotH };
 
   ctx.restore();
   ctx.textAlign = 'left';
