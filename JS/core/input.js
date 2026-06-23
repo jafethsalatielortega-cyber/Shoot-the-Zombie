@@ -118,6 +118,8 @@ let BTN_JUMP_X = 1100, BTN_JUMP_Y = 295, BTN_JUMP_R = 38;
 let BTN_SPRINT_X = 1010, BTN_SPRINT_Y = 390, BTN_SPRINT_R = 32;
 let BTN_SWITCH_X = 1200, BTN_SWITCH_Y = 390, BTN_SWITCH_R = 32;
 let BTN_RELOAD_X = 1100, BTN_RELOAD_Y = 465, BTN_RELOAD_R = 30;
+let BTN_KNIFE_X = 1200, BTN_KNIFE_Y = 295, BTN_KNIFE_R = 30;
+let BTN_BOARD_X = 1010, BTN_BOARD_Y = 465, BTN_BOARD_R = 30;
 let AIM_ZONE_X1 = 200, AIM_ZONE_X2 = 1050;
 
 // ─── [NEW] TOUCH LAYOUT PERSISTENCE ───
@@ -129,6 +131,8 @@ function saveTouchLayout() {
     BTN_SPRINT_X, BTN_SPRINT_Y, BTN_SPRINT_R,
     BTN_SWITCH_X, BTN_SWITCH_Y, BTN_SWITCH_R,
     BTN_RELOAD_X, BTN_RELOAD_Y, BTN_RELOAD_R,
+    BTN_KNIFE_X, BTN_KNIFE_Y, BTN_KNIFE_R,
+    BTN_BOARD_X, BTN_BOARD_Y, BTN_BOARD_R,
     AIM_ZONE_X1, AIM_ZONE_X2,
   })); } catch(e) {}
 }
@@ -156,6 +160,12 @@ function loadTouchLayout() {
     if (d.BTN_RELOAD_X !== undefined) BTN_RELOAD_X = d.BTN_RELOAD_X;
     if (d.BTN_RELOAD_Y !== undefined) BTN_RELOAD_Y = d.BTN_RELOAD_Y;
     if (d.BTN_RELOAD_R !== undefined) BTN_RELOAD_R = d.BTN_RELOAD_R;
+    if (d.BTN_KNIFE_X !== undefined) BTN_KNIFE_X = d.BTN_KNIFE_X;
+    if (d.BTN_KNIFE_Y !== undefined) BTN_KNIFE_Y = d.BTN_KNIFE_Y;
+    if (d.BTN_KNIFE_R !== undefined) BTN_KNIFE_R = d.BTN_KNIFE_R;
+    if (d.BTN_BOARD_X !== undefined) BTN_BOARD_X = d.BTN_BOARD_X;
+    if (d.BTN_BOARD_Y !== undefined) BTN_BOARD_Y = d.BTN_BOARD_Y;
+    if (d.BTN_BOARD_R !== undefined) BTN_BOARD_R = d.BTN_BOARD_R;
     if (d.AIM_ZONE_X1 !== undefined) AIM_ZONE_X1 = d.AIM_ZONE_X1;
     if (d.AIM_ZONE_X2 !== undefined) AIM_ZONE_X2 = d.AIM_ZONE_X2;
   } catch(e) {}
@@ -167,6 +177,8 @@ function resetTouchLayout() {
   BTN_SPRINT_X = 1010; BTN_SPRINT_Y = 390; BTN_SPRINT_R = 32;
   BTN_SWITCH_X = 1200; BTN_SWITCH_Y = 390; BTN_SWITCH_R = 32;
   BTN_RELOAD_X = 1100; BTN_RELOAD_Y = 465; BTN_RELOAD_R = 30;
+  BTN_KNIFE_X = 1200; BTN_KNIFE_Y = 295; BTN_KNIFE_R = 30;
+  BTN_BOARD_X = 1010; BTN_BOARD_Y = 465; BTN_BOARD_R = 30;
   AIM_ZONE_X1 = 200; AIM_ZONE_X2 = 1050;
   saveTouchLayout();
 }
@@ -245,6 +257,20 @@ function handlePointerDown(e) {
     return;
   }
 
+  // Botón KNIFE / CAJA (E)
+  if (dist(p.x, p.y, BTN_KNIFE_X, BTN_KNIFE_Y) < BTN_KNIFE_R + 12) {
+    touches[id]._btn = 'knife';
+    keys['KeyE'] = true;
+    return;
+  }
+
+  // Botón BOARD / TABLAS (T)
+  if (dist(p.x, p.y, BTN_BOARD_X, BTN_BOARD_Y) < BTN_BOARD_R + 12) {
+    touches[id]._btn = 'board';
+    pressMomentaryKey('KeyT');
+    return;
+  }
+
   // Zona de puntería (centro de la pantalla)
   if (p.x >= AIM_ZONE_X1 && p.x <= AIM_ZONE_X2 && p.y >= 0 && p.y <= LOGICAL_H) {
     aimPointer = id;
@@ -303,6 +329,9 @@ function handlePointerUp(e) {
     }
     if (touch._btn === 'jump') {
       keys['Space'] = false;
+    }
+    if (touch._btn === 'knife') {
+      keys['KeyE'] = false;
     }
   }
 

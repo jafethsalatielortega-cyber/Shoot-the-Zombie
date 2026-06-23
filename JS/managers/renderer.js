@@ -259,6 +259,32 @@ function drawTouchGamepad() {
   ctx.textAlign = 'center';
   ctx.fillText('RLD', BTN_RELOAD_X, BTN_RELOAD_Y + 3);
 
+  // ─── BOTÓN KNIFE ───
+  ctx.beginPath();
+  ctx.arc(BTN_KNIFE_X, BTN_KNIFE_Y, BTN_KNIFE_R, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,100,100,0.45)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,140,140,0.8)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('KNIFE', BTN_KNIFE_X, BTN_KNIFE_Y + 3);
+
+  // ─── BOTÓN BOARD ───
+  ctx.beginPath();
+  ctx.arc(BTN_BOARD_X, BTN_BOARD_Y, BTN_BOARD_R, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(200,140,60,0.45)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(220,170,90,0.8)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('BOARD', BTN_BOARD_X, BTN_BOARD_Y + 3);
+
   // ─── INDICADOR DE PUNTERÍA TÁCTIL ───
   // Pequeña cruceta que muestra hacia dónde apunta el jugador con el toque
   if (aimPointer >= 0 && !showTouchControls) {
