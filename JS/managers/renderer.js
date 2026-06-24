@@ -314,6 +314,7 @@ function drawTouchGamepad(gs) {
 // En tablets (≥768px) el modo retrato es aceptable y no se muestra.
 function drawOrientationOverlay() {
   if (!showTouchControls) return;
+  if (audioInit) return;  // Tras el primer toque, el orientation lock se encarga solo
   if (window.innerWidth >= window.innerHeight) return;
   if (window.innerWidth >= 768) return;
   ctx.save();

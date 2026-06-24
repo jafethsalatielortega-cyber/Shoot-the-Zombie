@@ -42,7 +42,7 @@ function loop(timestamp) {
   // ─── [NEW] PORTRAIT PAUSE ───
   // En teléfonos en vertical: detiene el juego y muestra overlay.
   // Se reanuda automáticamente al girar a horizontal.
-  const isPortraitBlock = showTouchControls && window.innerWidth < window.innerHeight && window.innerWidth < 768;
+  const isPortraitBlock = showTouchControls && !audioInit && window.innerWidth < window.innerHeight && window.innerWidth < 768;
 
   // ─── MÁQUINA DE ESTADOS ───
   switch(gs.state) {

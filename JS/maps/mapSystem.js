@@ -278,7 +278,7 @@
   const _origLoop = loop;
   // Mientras el estado sea 'mapSelect', dibuja la pantalla y procesa input
   loop = function myLoop(timestamp) {
-    const _portraitBlock = showTouchControls && window.innerWidth < window.innerHeight && window.innerWidth < 768;
+    const _portraitBlock = showTouchControls && !audioInit && window.innerWidth < window.innerHeight && window.innerWidth < 768;
     if (gs && gs.state === 'mapSelect') {
       requestAnimationFrame(myLoop);
       const dt = Math.min((timestamp - (_lastTs || timestamp)) / 1000, 0.05);
