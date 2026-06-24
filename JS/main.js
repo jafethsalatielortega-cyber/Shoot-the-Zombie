@@ -81,13 +81,13 @@ function loop(timestamp) {
       }
       // ─── PAUSA CON TECLA P ───
       // Alterna entre pausado y reanudado; usa buffer para detectar flanco
-      if ((keys['KeyP'] || keys['Escape']) && !gs._pauseBuf) {
+      if (keys['KeyP'] && !gs._pauseBuf) {
         gs._pauseBuf = true;
         gs.paused = !gs.paused;
         if (!gs.paused) { gs._layoutEditorOpen = false; gs._pauseOptionsOpen = false; }
         if (!gs.paused && gs.player) gs.player.fireCooldown = 0.15;
       }
-      if (!keys['KeyP'] && !keys['Escape'] && gs) gs._pauseBuf = false;
+      if (!keys['KeyP'] && gs) gs._pauseBuf = false;
       // ─── PAUSA CON CLIC EN BOTÓN ───
       if ((mouse.down || pointerPressed) && !gs._pauseClickBuf && gs._pauseBtn) {
         const b = gs._pauseBtn;

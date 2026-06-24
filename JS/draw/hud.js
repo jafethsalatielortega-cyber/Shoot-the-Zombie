@@ -244,19 +244,20 @@ function drawHUD(gs) {
 
   // ─── BOTÓN DE PAUSA ───
   // Define la posición y tamaño del botón de pausa en la esquina superior derecha
-  const pauseBtn = { x: LOGICAL_W - 36, y: 10, w: 28, h: 24 };
+  const pauseBtn = { x: LOGICAL_W - 42, y: 10, w: 34, h: 26 };
   // Cambia el color si el juego está pausado (naranja) o no (gris semitransparente)
-  ctx.fillStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.15)';
-  ctx.strokeStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.3)';
+  ctx.fillStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.18)';
+  ctx.strokeStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.4)';
   ctx.lineWidth = 1.5;
   // Dibuja el botón con bordes redondeados (roundRect)
-  ctx.beginPath(); ctx.roundRect(pauseBtn.x, pauseBtn.y, pauseBtn.w, pauseBtn.h, 4); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.6)';
-  ctx.font = 'bold 14px monospace';
-  ctx.textAlign = 'center';
-  // Dibuja el texto "II" (símbolo de pausa) dentro del botón
-  ctx.fillText('II', pauseBtn.x + pauseBtn.w / 2, pauseBtn.y + 20);
-  ctx.textAlign = 'left';
+  ctx.beginPath(); ctx.roundRect(pauseBtn.x, pauseBtn.y, pauseBtn.w, pauseBtn.h, 5); ctx.fill(); ctx.stroke();
+  // Dibuja el icono de pausa (dos barras verticales)
+  const pCx = pauseBtn.x + pauseBtn.w / 2;
+  const pCy = pauseBtn.y + pauseBtn.h / 2;
+  const bw = 3.5, gap = 4, bh = 12;
+  ctx.fillStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.75)';
+  ctx.fillRect(pCx - gap - bw, pCy - bh / 2, bw, bh);
+  ctx.fillRect(pCx + gap, pCy - bh / 2, bw, bh);
   // Guarda la referencia del botón en el estado global para detectar clics
   gs._pauseBtn = pauseBtn;
 
