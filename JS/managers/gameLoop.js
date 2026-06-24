@@ -95,7 +95,8 @@ function updatePlaying(gs, dt) {
     p.knifeTimer -= dt;
     // Mientras el cuchillo esté activo y no haya golpeado aún
     if (p.knifeTimer > 0 && !p.knifeHit) {
-      const range = 45;                                     // Alcance del cuchillo en píxeles
+      const isKatana = p.weapon.isMelee && p.weapon.index === 5;
+      const range = isKatana ? 70 : 45;                     // La katana tiene más alcance (70px)
       const hw = range / 2;
       // Revisa colisiones con todos los zombies
       for (const z of gs.zombies) {
@@ -105,12 +106,13 @@ function updatePlaying(gs, dt) {
         const dy = (p.y - 20) - (z.y - z.height / 2);
         // Si el zombie está dentro del alcance
         if (Math.abs(dx) < range && Math.abs(dy) < z.height / 2 + 15) {
-          // Si insta-kill está activo, mata al zombie instantáneamente; si no, hace 50 de daño
-          if (p.instaKillTimer > 0) z.hp = 0; else z.hp -= 50;
+          // Si insta-kill está activo, mata instantáneamente; si no, usa el daño del arma
+          const dmg = isKatana ? p.weapon.damage : 50;
+          if (p.instaKillTimer > 0) z.hp = 0; else z.hp -= dmg;
           // Efectos visuales: sangre y texto flotante
           spawnBlood(z.x, z.y);
-          spawnFloat(p.instaKillTimer > 0 ? 'INSTA!' : '-50', z.x, z.y - 10, p.instaKillTimer > 0 ? '#ff00ff' : '#e0e0e0');
-          gs.score += 50;                                   // Puntos por acuchillar
+          spawnFloat(p.instaKillTimer > 0 ? 'INSTA!' : '-' + dmg, z.x, z.y - 10, p.instaKillTimer > 0 ? '#ff00ff' : (isKatana ? '#ffd700' : '#e0e0e0'));
+          gs.score += isKatana ? 100 : 50;                  // Katana da más puntos (100 vs 50)
           p.knifeHit = true;                                // Marca que ya golpeó
           // Si el zombie murió, llama a killZombie()
           if (z.hp <= 0 && !z.dead) killZombie(gs, z, z.x, z.y);
@@ -121,11 +123,13 @@ function updatePlaying(gs, dt) {
       if (!p.knifeHit && gs.boss && !gs.boss.dead) {
         const dx = (p.x + p.dir * 20) - gs.boss.x;
         const dy = (p.y - 20) - (gs.boss.y - gs.boss.height / 2);
-        if (Math.abs(dx) < 55 && Math.abs(dy) < gs.boss.height / 2 + 15) {
-          if (p.instaKillTimer > 0) gs.boss.hp = 0; else gs.boss.hp -= 50;
+        const bossRange = isKatana ? 80 : 55;
+        if (Math.abs(dx) < bossRange && Math.abs(dy) < gs.boss.height / 2 + 15) {
+          const dmg = isKatana ? p.weapon.damage : 50;
+          if (p.instaKillTimer > 0) gs.boss.hp = 0; else gs.boss.hp -= dmg;
           spawnBlood(gs.boss.x, gs.boss.y);
-          spawnFloat(p.instaKillTimer > 0 ? 'INSTA!' : '-50', gs.boss.x, gs.boss.y - 10, p.instaKillTimer > 0 ? '#ff00ff' : '#e0e0e0');
-          gs.score += 50;
+          spawnFloat(p.instaKillTimer > 0 ? 'INSTA!' : '-' + dmg, gs.boss.x, gs.boss.y - 10, p.instaKillTimer > 0 ? '#ff00ff' : (isKatana ? '#ffd700' : '#e0e0e0'));
+          gs.score += isKatana ? 100 : 50;
           p.knifeHit = true;
           if (gs.boss.hp <= 0 && !gs.boss.dead) killBoss(gs, gs.boss);
         }
@@ -151,9 +155,10 @@ function updatePlaying(gs, dt) {
   // Calcula la velocidad: normal o multiplicada por el sprint
   const speed = WALK_SPEED * (p.sprinting ? SPRINT_MULT : 1);
 
-  // Si el cuchillo está activo, el jugador se impulsa hacia adelante
+  // Si el cuchillo/katana está activo, el jugador se impulsa hacia adelante
   if (p.knifeTimer > 0) {
-    p.vx = p.dir * 400;                                  // Impulso hacia adelante al apuñalar
+    const isKatana = p.weapon.isMelee && p.weapon.index === 5;
+    p.vx = p.dir * (isKatana ? 650 : 400);               // Katana: dash más rápido (650 vs 400)
   } else if (keys['KeyD'] || keys['ArrowRight']) {
     p.vx = Math.min(speed, p.vx + speed * 10 * dt);      // Acelera hacia la derecha
     p.dir = 1;                                            // Dirección: derecha
@@ -196,7 +201,8 @@ function updatePlaying(gs, dt) {
 
   // ─── RECARGA MANUAL (TECLA R) ───
   // Si presiona R y no está recargando, tiene menos balas que el cargador y tiene munición de reserva
-  if ((keys['KeyR']) && !p.reloading && p.ammo < p.weapon.magSize && p.totalAmmo > 0) {
+  // Las armas cuerpo a cuerpo (isMelee) no se recargan
+  if ((keys['KeyR']) && !p.reloading && p.ammo < p.weapon.magSize && p.totalAmmo > 0 && !p.weapon.isMelee) {
     p.reloading = true;
     p.reloadTimer = p.weapon.reloadTime;                       // Tiempo que tarda en recargar
     SFX.reload();                                              // Sonido de recarga
@@ -236,13 +242,23 @@ function updatePlaying(gs, dt) {
       }
     }
     if (!nearBox) {
-      // Si no está cerca de la caja, realiza el ataque con cuchillo
       p._eBuf = true;
-      p.knifeTimer = 0.25;                                      // Duración del ataque
-      p.knifeCooldown = 0.6;                                    // Tiempo hasta el próximo ataque
-      p.knifeHit = false;                                       // Reinicia el indicador de golpe
-      // Partículas de rayas blancas (efecto de cuchillada)
-      spawnParticles(4, p.x + p.dir * 20, p.y - 20, '#e8e8e8', 200, 1.2, 0, 3, 0.15);
+      if (p.weapon.isMelee && p.weapon.index === 5) {
+        // ─── ATAQUE KATANA ───
+        p.knifeTimer = 0.35;                                    // Animación más larga (0.35s)
+        p.knifeCooldown = 0.8;                                  // Enfriamiento más largo (0.8s)
+        p.knifeHit = false;
+        // Partículas de corte más vistosas
+        spawnParticles(10, p.x + p.dir * 30, p.y - 20, '#d0d0d0', 250, 1.5, 0, 4, 0.15);
+        spawnParticles(4, p.x + p.dir * 30, p.y - 20, '#ffffff', 300, 1.0, 0, 3, 0.1);
+      } else {
+        // ─── ATAQUE CUCHILLO NORMAL ───
+        p.knifeTimer = 0.25;                                    // Duración del ataque
+        p.knifeCooldown = 0.6;                                  // Tiempo hasta el próximo ataque
+        p.knifeHit = false;                                     // Reinicia el indicador de golpe
+        // Partículas de rayas blancas (efecto de cuchillada)
+        spawnParticles(4, p.x + p.dir * 20, p.y - 20, '#e8e8e8', 200, 1.2, 0, 3, 0.15);
+      }
     } else {
       p._eBuf = true;                                           // Marca buffer para la caja misteriosa
     }
@@ -811,8 +827,8 @@ function updatePlaying(gs, dt) {
 // Soporta power-ups: Double Shot (reduce fireRate a la mitad) y Unlimited Ammo (no gasta balas).
 function tryShoot(gs) {
   const p = gs.player;
-  // No puede disparar si: está recargando, en enfriamiento, o muerto
-  if (p.reloading || p.fireCooldown > 0 || p.dead) return;
+  // No puede disparar si: está recargando, en enfriamiento, muerto, o es arma cuerpo a cuerpo
+  if (p.reloading || p.fireCooldown > 0 || p.dead || p.weapon.isMelee) return;
   // Si no tiene munición infinita, verifica la munición normal
   if (p.unlimitedAmmoTimer <= 0) {
     if (p.ammo <= 0) {

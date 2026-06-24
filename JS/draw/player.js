@@ -28,27 +28,133 @@ function drawPlayer(p, camX) {
   drawPlayerBody(ctx, p, t);
   ctx.restore();
 
-  // ─── ATAQUE DE CUCHILLO ───
-  // Dibuja una línea blanca simulando el cuchillo cuando ataca
+  // ─── ATAQUE DE CUCHILLO / KATANA ───
+  // El cuchillo normal se dibuja como una línea blanca simple.
+  // La katana (isMelee) tiene una hoja curva con animación de barrido y efecto de dash.
   if (p.knifeTimer > 0) {
+    if (p.weapon.isMelee && p.weapon.index === 5) {
+      // ─── KATANA: ATAQUE ───
+      // Animación de barrido: la katana rota desde atrás hacia adelante
+      const prog = 1 - p.knifeTimer / 0.35; // 0 → 1 durante el ataque
+      const swingAngle = -1.2 + prog * 2.8; // Barrido de -1.2rad a +1.6rad
+      ctx.save();
+      const kx = x + p.dir * 20;
+      const ky = y - 20;
+      ctx.translate(kx, ky);
+      if (p.dir < 0) ctx.scale(-1, 1);
+      ctx.rotate(swingAngle);
+      // Hoja curva (arco plateado)
+      ctx.strokeStyle = '#e8e8e8';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(5, 5, 42, -0.5, 0.7);
+      ctx.stroke();
+      // Filo de corte (línea más brillante en el borde exterior)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(5, 5, 42, -0.4, 0.6);
+      ctx.stroke();
+      // Contrafilo (línea más oscura en el borde interior)
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(5, 5, 38, -0.3, 0.5);
+      ctx.stroke();
+      // Guarda (tsuba — pieza cuadrada entre hoja y mango)
+      ctx.fillStyle = '#a08050';
+      ctx.fillRect(-7, -2, 14, 4);
+      ctx.fillStyle = '#666';
+      ctx.fillRect(-8, -1, 16, 2);
+      // Mango (tsuka) envuelto en cuerda
+      ctx.strokeStyle = '#5a3a1a';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(0, 3);
+      ctx.lineTo(0, 18);
+      ctx.stroke();
+      // Diamantes de la cuerda del mango
+      ctx.strokeStyle = '#3a2010';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 4; i++) {
+        const my = 5 + i * 3.5;
+        ctx.beginPath();
+        ctx.moveTo(-2, my);
+        ctx.lineTo(0, my + 1.5);
+        ctx.lineTo(2, my);
+        ctx.stroke();
+      }
+      ctx.restore();
+      // Líneas de velocidad (efecto de dash) detrás del jugador
+      if (prog < 0.6) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 6; i++) {
+          const sx = x - p.dir * (15 + Math.random() * 40);
+          const sy = y - 20 + (Math.random() - 0.5) * 20;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx - p.dir * (30 + Math.random() * 30), sy + (Math.random() - 0.5) * 8);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    } else {
+      // ─── CUCHILLO NORMAL ───
+      ctx.save();
+      const kx = x + p.dir * 20;
+      const ky = y - 20;
+      ctx.strokeStyle = '#c0c0c0';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(kx, ky);
+      ctx.lineTo(kx + p.dir * 25, ky);
+      ctx.stroke();
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(kx + p.dir * 10, ky - 2);
+      ctx.lineTo(kx + p.dir * 10, ky + 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  // ─── KATANA EN REPOSO ───
+  // Cuando el jugador tiene la katana equipada pero no está atacando,
+  // se dibuja envainada en la espalda/cintura
+  if (p.knifeTimer <= 0 && p.weapon.isMelee && p.weapon.index === 5) {
     ctx.save();
-    // Posición del cuchillo: adelante del jugador según la dirección
-    const kx = x + p.dir * 20;
-    const ky = y - 20;
-    // Hoja del cuchillo (línea blanca)
-    ctx.strokeStyle = '#c0c0c0';
-    ctx.lineWidth = 3;
+    const sx = x - p.dir * 6;
+    const sy = y - 22;
+    ctx.translate(sx, sy);
+    if (p.dir < 0) ctx.scale(-1, 1);
+    ctx.rotate(0.3);
+    // Vaina (saya) de la katana
+    ctx.strokeStyle = '#3a2010';
+    ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(kx, ky);
-    ctx.lineTo(kx + p.dir * 25, ky);
+    ctx.moveTo(3, -20);
+    ctx.lineTo(3, 10);
     ctx.stroke();
-    // Mango del cuchillo (línea más gruesa y oscura)
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 5;
+    // Detalle de la vaina
+    ctx.strokeStyle = '#5a3a1a';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(kx + p.dir * 10, ky - 2);
-    ctx.lineTo(kx + p.dir * 10, ky + 2);
+    ctx.moveTo(3, -18);
+    ctx.lineTo(3, 8);
+    ctx.stroke();
+    // Tsuka (mango) sobresaliendo
+    ctx.strokeStyle = '#4a2a10';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(3, 10);
+    ctx.lineTo(3, 18);
     ctx.stroke();
     ctx.restore();
   }

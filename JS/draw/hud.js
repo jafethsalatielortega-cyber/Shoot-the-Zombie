@@ -89,16 +89,18 @@ function drawHUD(gs) {
   // ─── MUNICIÓN (parpadea si quedan 3 o menos balas) ───
   // Referencia al arma actual del jugador para acceder a nombre y capacidad
   const w = p.weapon;
+  // Las armas cuerpo a cuerpo (isMelee) no muestran munición
+  const isMeleeWpn = w.isMelee;
   // Si quedan 3 o menos balas, el texto parpadea entre rojo y naranja cada 500ms
   const ammoColor = p.ammo <= 3 ? (Date.now()%500<250 ? '#f00' : '#fa0') : '#fff';
   // Alinea el texto a la derecha para la sección de munición
   ctx.textAlign = 'right';
-  ctx.fillStyle = ammoColor;
+  ctx.fillStyle = isMeleeWpn ? '#888' : ammoColor;
   ctx.font = 'bold 16px monospace';
-  // Muestra "RELOADING..." si está recargando, o "balas / total" si no
-  ctx.fillText((p.reloading ? 'RELOADING...' : p.ammo + ' / ' + p.totalAmmo), LOGICAL_W - 50, 28);
+  // Muestra "RELOADING..." si está recargando, "---" si es cuerpo a cuerpo, o "balas / total" si no
+  ctx.fillText(isMeleeWpn ? '---' : (p.reloading ? 'RELOADING...' : p.ammo + ' / ' + p.totalAmmo), LOGICAL_W - 50, 28);
   // Muestra el nombre del arma actual debajo de la munición
-  ctx.fillStyle = '#aaa';
+  ctx.fillStyle = isMeleeWpn ? '#ffd700' : '#aaa';
   ctx.font = '11px monospace';
   ctx.fillText(w.name, LOGICAL_W - 50, 44);
 

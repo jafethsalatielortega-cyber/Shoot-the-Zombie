@@ -44,8 +44,18 @@ const WEAPONS = [
     auto: true,
     spread: 0.07, bulletW: 4, bulletH: 2, bulletColor: '#ff6644', pellets: 1, shake: 1.5, // Dispersión media-alta
   },
+  {
+    name: 'KATANA', index: 5,                  // Katana: arma cuerpo a cuerpo de la caja misteriosa
+    damage: 120,                               // Daño muy alto (120 vs 50 del cuchillo normal)
+    isMelee: true,                             // Marca especial: arma cuerpo a cuerpo, sin balas
+    fireRate: 0.8,                             // Tiempo de enfriamiento entre ataques (0.8s)
+    magSize: 999, totalAmmo: 999,              // Sin munición (valores altos para evitar recarga)
+    reloadTime: 0,
+    auto: false,
+    spread: 0, bulletW: 1, bulletH: 1, bulletColor: '#c0c0c0', pellets: 1, shake: 0,
+  },
 ];
 // Índices de las armas disponibles en la caja misteriosa (Mystery Box).
 // Se excluye la pistola (índice 0) porque el jugador ya la tiene al inicio.
 // Orden de aparición: Escopeta(2), Pistolas Dobles(3), AK-47(1), Ametralladora(4)
-const MYSTERY_WEAPON_INDICES = [2, 3, 1, 4];
+const MYSTERY_WEAPON_INDICES = [2, 3, 1, 4, 5];
