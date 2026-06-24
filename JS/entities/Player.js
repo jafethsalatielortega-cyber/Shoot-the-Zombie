@@ -75,6 +75,11 @@ class Player {
     this.doubleShotTimer = 0;     // Si > 0, el jugador dispara DOS balas por cada disparo. El temporizador cuenta cuánto tiempo queda
     this.unlimitedAmmoTimer = 0;  // Si > 0, el jugador tiene munición infinita. El temporizador cuenta cuánto tiempo queda
 
+    // ─── STAMINA ───
+    // Controla la energía para correr. Al agotarse no se puede esprintar hasta recargar
+    this.stamina = 100;
+    this.maxStamina = 100;
+
     // ─── GRANADA ───
     // Controla el lanzamiento de granadas
     this.grenadeCooldown = 0;  // Tiempo de espera entre lanzamientos de granada. Mientras > 0, no se puede lanzar otra

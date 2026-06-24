@@ -139,8 +139,15 @@ function updatePlaying(gs, dt) {
   // Sistema de entrada → velocidad horizontal.
   // Usa aceleración suave (no instantánea) para dar sensación de peso,
   // y fricción exponencial cuando no se presiona ninguna tecla.
-  // Detecta si el jugador está presionando Shift (correr)
-  p.sprinting = keys['ShiftLeft'] || keys['ShiftRight'];
+  // Detecta si el jugador está presionando Shift (correr) y si tiene stamina
+  const wantSprint = (keys['ShiftLeft'] || keys['ShiftRight']) && p.stamina > 0;
+  p.sprinting = wantSprint;
+  // Drena stamina al correr, regenera al caminar/quieto
+  if (p.sprinting && Math.abs(p.vx) > 10) {
+    p.stamina = Math.max(0, p.stamina - 28 * dt);
+  } else {
+    p.stamina = Math.min(p.maxStamina, p.stamina + 18 * dt);
+  }
   // Calcula la velocidad: normal o multiplicada por el sprint
   const speed = WALK_SPEED * (p.sprinting ? SPRINT_MULT : 1);
 

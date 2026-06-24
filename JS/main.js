@@ -181,17 +181,17 @@ function loop(timestamp) {
 
           // ─── BOTONES DE VOLUMEN (se verifican ANTES que opciones,
           //     porque están dentro del área del botón OPCIONES) ───
-          if (gs._pauseOptionsOpen) {
+            if (gs._pauseOptionsOpen) {
             if (gs._pauseVolMinus &&
                 mouse.x > gs._pauseVolMinus.x && mouse.x < gs._pauseVolMinus.x + gs._pauseVolMinus.w &&
                 mouse.y > gs._pauseVolMinus.y && mouse.y < gs._pauseVolMinus.y + gs._pauseVolMinus.h) {
-              if (typeof masterVolume !== 'undefined') { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); try { playTone(600, 600, 'sine', 0.08, 0.15); } catch(e){} }
+              if (typeof masterVolume !== 'undefined') { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); if (typeof bgMusic !== 'undefined' && bgMusic) bgMusic.volume = 0.4 * masterVolume; try { playTone(600, 600, 'sine', 0.08, 0.15); } catch(e){} }
               handled = true;
             }
             if (!handled && gs._pauseVolPlus &&
                 mouse.x > gs._pauseVolPlus.x && mouse.x < gs._pauseVolPlus.x + gs._pauseVolPlus.w &&
                 mouse.y > gs._pauseVolPlus.y && mouse.y < gs._pauseVolPlus.y + gs._pauseVolPlus.h) {
-              if (typeof masterVolume !== 'undefined') { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); try { playTone(800, 800, 'sine', 0.08, 0.15); } catch(e){} }
+              if (typeof masterVolume !== 'undefined') { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); if (typeof bgMusic !== 'undefined' && bgMusic) bgMusic.volume = 0.4 * masterVolume; try { playTone(800, 800, 'sine', 0.08, 0.15); } catch(e){} }
               handled = true;
             }
             // ─── BUTTON LAYOUT (dentro de opciones expandidas) ───
@@ -227,6 +227,7 @@ function loop(timestamp) {
                   mouse.y > btns.menu.y && mouse.y < btns.menu.y + btns.menu.h) {
                 if (typeof meteorEvent !== 'undefined' && meteorEvent.triggered) resetMeteorEvent();
                 if (typeof _setMapConfirmed !== 'undefined') window._setMapConfirmed(false);
+                stopBgMusic();
                 gs = createGameState();
                 gs.state = 'title';
                 handled = true;
@@ -323,6 +324,7 @@ function loop(timestamp) {
       if (keys['KeyR'] && !gs._rBuf) {
         gs._rBuf = true;
         if (meteorEvent.triggered) resetMeteorEvent();
+        stopBgMusic();
         gs = createGameState();
         startGame();
       }
@@ -334,12 +336,14 @@ function loop(timestamp) {
         if (mouse.x>bx && mouse.x<bx+bw && mouse.y>by && mouse.y<by+bh) {
           gs._clickBuf = true;
           if (meteorEvent.triggered) resetMeteorEvent();
+          stopBgMusic();
           gs = createGameState();
           startGame();
         } else if (mouse.x>bx2 && mouse.x<bx2+bw2 && mouse.y>by2 && mouse.y<by2+bh2) {
           gs._clickBuf = true;
           if (meteorEvent.triggered) resetMeteorEvent();
           window._setMapConfirmed(false);
+          stopBgMusic();
           gs = createGameState();
           gs.state = 'title';
         }

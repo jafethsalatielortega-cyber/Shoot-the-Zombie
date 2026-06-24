@@ -1,13 +1,15 @@
 // ─── AUDIO Y EFECTOS DE SONIDO ───
 // Gestiona todo el audio del juego usando la API Web Audio.
 // Los efectos se generan por síntesis (tonos y ruido) en lugar de archivos de audio,
-// salvo el sonido de cambio de oleada que se carga desde un MP3.
+// salvo el sonido de cambio de oleada y la música de fondo que se cargan desde MP3.
 
 // Contexto de audio del navegador. Se crea bajo demanda cuando el usuario interactúa
 // debido a las políticas de autoplay de los navegadores modernos.
 let audioCtx = null;
 // Objeto Audio para reproducir el sonido de cambio de oleada desde un archivo MP3
 let waveSound = null;
+// Objeto Audio para la música de fondo (tema principal)
+let bgMusic = null;
 // Volumen maestro global (0.0 - 1.0). Se aplica a todos los sonidos.
 let masterVolume = 1.0;
 
@@ -18,10 +20,34 @@ try {
   waveSound.volume = 0.5;       // Volumen al 50%
 } catch(e) {}  // Si el archivo no existe, ignora el error silenciosamente
 
+// Intenta cargar el archivo MP3 de la música de fondo (tema principal)
+try {
+  bgMusic = new Audio('THEMES/Zombie Shooter Soundtrack - Action 12.mp3');
+  bgMusic.preload = 'auto';
+  bgMusic.loop = false;         // Maneja el bucle manualmente para control preciso
+  bgMusic.volume = 0.4;         // Volumen base (se ajusta con masterVolume)
+  // Bucle infinito: al terminar, vuelve al inicio
+  bgMusic.addEventListener('ended', function() {
+    try { this.currentTime = 0; this.play(); } catch(e) {}
+  });
+} catch(e) {}
+
 // Reproduce el sonido de cambio de oleada desde el inicio
 function playWaveSound() {
   if (!waveSound) return;
   try { waveSound.currentTime = 0; waveSound.volume = 0.5 * masterVolume; waveSound.play(); } catch(e) {}
+}
+
+// Inicia la música de fondo (tema principal) en bucle infinito
+function startBgMusic() {
+  if (!bgMusic) return;
+  try { bgMusic.currentTime = 0; bgMusic.volume = 0.4 * masterVolume; bgMusic.play(); } catch(e) {}
+}
+
+// Detiene la música de fondo
+function stopBgMusic() {
+  if (!bgMusic) return;
+  try { bgMusic.pause(); bgMusic.currentTime = 0; } catch(e) {}
 }
 
 // Indica si el audio ya fue inicializado tras la primera interacción del usuario

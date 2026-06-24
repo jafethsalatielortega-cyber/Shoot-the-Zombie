@@ -30,6 +30,19 @@ function drawHUD(gs) {
   ctx.font = 'bold 10px monospace';
   ctx.fillText('HP', 140, 25);
 
+  // ─── BARRA DE STAMINA ───
+  ctx.fillStyle = '#222';
+  ctx.fillRect(14, 30, 120, 10);
+  const stamRatio = p.stamina / p.maxStamina;
+  const stamColor = stamRatio > 0.5 ? '#30c0e0' : stamRatio > 0.25 ? '#e0a030' : '#e03030';
+  ctx.fillStyle = stamColor;
+  ctx.fillRect(15, 31, 118 * stamRatio, 8);
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+  ctx.strokeRect(14, 30, 120, 10);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 8px monospace';
+  ctx.fillText('STAMINA', 16, 39);
+
   // ─── PUNTUACIÓN ───
   // Muestra la puntuación actual centrada en la pantalla, con formato de 6 dígitos (ej. 000500)
   ctx.fillStyle = '#00ff88';
