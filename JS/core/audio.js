@@ -53,8 +53,26 @@ function stopBgMusic() {
 // Indica si el audio ya fue inicializado tras la primera interacción del usuario
 let audioInit = false;
 
-// Marca el audio como iniciado y garantiza que el contexto de audio esté listo
-function initAudio() { audioInit = true; ensureCtx(); }
+// Marca el audio como iniciado, garantiza que el contexto de audio esté listo,
+// solicita pantalla completa y bloquea la orientación a landscape en móviles
+function initAudio() {
+  audioInit = true;
+  ensureCtx();
+  // ─── Pantalla completa (móvil y PC) ───
+  try {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.msRequestFullscreen) el.msRequestFullscreen();
+  } catch(e) {}
+  // ─── Bloqueo de orientación a landscape en móviles ───
+  // La pantalla se girará automáticamente, el usuario no necesita rotar manualmente
+  try {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(function(){});
+    }
+  } catch(e) {}
+}
 
 // ─── GESTIÓN DEL CONTEXTO DE AUDIO ───
 
