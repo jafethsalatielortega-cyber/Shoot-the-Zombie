@@ -42,7 +42,7 @@ function loop(timestamp) {
   // ─── [NEW] PORTRAIT PAUSE ───
   // En teléfonos en vertical: detiene el juego y muestra overlay.
   // Se reanuda automáticamente al girar a horizontal.
-  const isPortraitBlock = showTouchControls && !audioInit && window.innerWidth < window.innerHeight && window.innerWidth < 768;
+  const isPortraitBlock = showTouchControls && window.innerWidth < window.innerHeight && window.innerWidth < 768;
 
   // ─── MÁQUINA DE ESTADOS ───
   switch(gs.state) {
@@ -79,15 +79,15 @@ function loop(timestamp) {
         drawOrientationOverlay();
         break;
       }
-      // ─── PAUSA CON TECLA ESC ───
+      // ─── PAUSA CON TECLA P ───
       // Alterna entre pausado y reanudado; usa buffer para detectar flanco
-      if (keys['Escape'] && !gs._pauseBuf) {
+      if ((keys['KeyP'] || keys['Escape']) && !gs._pauseBuf) {
         gs._pauseBuf = true;
         gs.paused = !gs.paused;
         if (!gs.paused) { gs._layoutEditorOpen = false; gs._pauseOptionsOpen = false; }
         if (!gs.paused && gs.player) gs.player.fireCooldown = 0.15;
       }
-      if (!keys['Escape'] && gs) gs._pauseBuf = false;
+      if (!keys['KeyP'] && !keys['Escape'] && gs) gs._pauseBuf = false;
       // ─── PAUSA CON CLIC EN BOTÓN ───
       if ((mouse.down || pointerPressed) && !gs._pauseClickBuf && gs._pauseBtn) {
         const b = gs._pauseBtn;

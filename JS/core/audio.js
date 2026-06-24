@@ -53,17 +53,18 @@ function stopBgMusic() {
 // Indica si el audio ya fue inicializado tras la primera interacción del usuario
 let audioInit = false;
 
-// Marca el audio como iniciado, garantiza que el contexto de audio esté listo,
-// solicita pantalla completa y bloquea la orientación a landscape en móviles
-function initAudio() {
-  audioInit = true;
-  ensureCtx();
+// Solicita pantalla completa y bloquea orientación a landscape en móviles.
+// Se llama en CADA interacción del usuario (toque, click, tecla) para reintentar
+// si la solicitud previa fue denegada o el navegador la ignoró.
+function requestFullscreenAndLock() {
   // ─── Pantalla completa (móvil y PC) ───
   try {
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen();
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    }
   } catch(e) {}
   // ─── Bloqueo de orientación a landscape en móviles ───
   // La pantalla se girará automáticamente, el usuario no necesita rotar manualmente
@@ -72,6 +73,13 @@ function initAudio() {
       screen.orientation.lock('landscape').catch(function(){});
     }
   } catch(e) {}
+}
+
+// Marca el audio como iniciado, garantiza que el contexto de audio esté listo
+function initAudio() {
+  audioInit = true;
+  ensureCtx();
+  requestFullscreenAndLock();
 }
 
 // ─── GESTIÓN DEL CONTEXTO DE AUDIO ───

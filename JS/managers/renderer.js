@@ -314,7 +314,6 @@ function drawTouchGamepad(gs) {
 // En tablets (≥768px) el modo retrato es aceptable y no se muestra.
 function drawOrientationOverlay() {
   if (!showTouchControls) return;
-  if (audioInit) return;  // Tras el primer toque, el orientation lock se encarga solo
   if (window.innerWidth >= window.innerHeight) return;
   if (window.innerWidth >= 768) return;
   ctx.save();
@@ -323,10 +322,10 @@ function drawOrientationOverlay() {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 32px monospace';
-  ctx.fillText('\uD83D\uDD04 Rotate your device', LOGICAL_W / 2, 220);
+  ctx.fillText('TOUCH TO START', LOGICAL_W / 2, 200);
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.font = '16px monospace';
-  ctx.fillText('Shoot the Zombie plays best in landscape', LOGICAL_W / 2, 270);
+  ctx.fillText('Landscape mode required', LOGICAL_W / 2, 240);
   ctx.restore();
 }
 

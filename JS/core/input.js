@@ -73,9 +73,10 @@ document.addEventListener('mousemove', e => {
   mouse.x = (e.clientX - rect.left) / scale;
   mouse.y = (e.clientY - rect.top)  / scale;
 });
-// Al hacer clic en el canvas: marca el botón como presionado e inicializa el audio si es necesario
+// Al hacer clic en el canvas: marca el botón como presionado, solicita pantalla completa e inicializa el audio si es necesario
 canvas.addEventListener('mousedown', e => {
   mouse.down = true;
+  requestFullscreenAndLock();
   if (!audioInit) initAudio();
 });
 // Al soltar el clic: marca el botón como no presionado
@@ -200,6 +201,7 @@ function handlePointerDown(e) {
   const id = e.pointerId;
   touches[id] = { x: p.x, y: p.y, active: true };
 
+  requestFullscreenAndLock();
   if (!audioInit) initAudio();
   updateDeviceFlags();
   pointerPressed = true;
