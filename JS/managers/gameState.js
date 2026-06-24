@@ -52,6 +52,7 @@ function createGameState() {
 
     // ─── GRANADAS ───
     grenades: [],             // Lista de granadas activas (en el aire o a punto de explotar)
-    paused: false,            // Indica si el juego está en pausa (true = pausado)
+    paused: false,            // Indica si el juego está en pausa (true = pausado）
+    _titleOptsClickBuf: false, // Buffer para clics en el overlay de opciones del título
   };
 }

@@ -4,6 +4,14 @@
 // El mensaje "PRESS ENTER TO START" parpadea para indicar la acción esperada
 // Variable para almacenar el botón táctil "JUGAR" (solo visible en móvil)
 let _titlePlayBtn = null;
+// Variable para el botón "OPCIONES" en la pantalla de título (solo móvil)
+let _titleOptsBtn = null;
+// Botones de volumen y retroceso en el overlay de opciones del título
+let _titleMusicMinus = null, _titleMusicPlus = null;
+let _titleSfxMinus = null, _titleSfxPlus = null;
+let _titleOptsBack = null;
+// Indica si el overlay de opciones en la pantalla de título está abierto
+let _titleOptionsOpen = false;
 
 function drawTitleScreen() {
   // Obtiene el tiempo actual en segundos para animaciones
@@ -85,34 +93,55 @@ function drawTitleScreen() {
   ctx.font = 'italic 17px monospace';
   ctx.fillText('Survive the horde. Don\'t run out of ammo.', LOGICAL_W/2, 260);
 
-  // ─── CONTROLES ───
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.font = '13px monospace';
-  ctx.fillText('WASD / Arrows: Move   Space/W: Jump   Mouse: Aim & Shoot   Q: Switch Weapon   R: Reload', LOGICAL_W/2, 340);
+  // ─── CONTROLES (ocultos en móvil) ───
+  if (!showTouchControls) {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '13px monospace';
+    ctx.fillText('WASD / Arrows: Move   Space/W: Jump   Mouse: Aim & Shoot   Q: Switch Weapon   R: Reload', LOGICAL_W/2, 340);
+  }
 
-  // ─── MENSAJE DE INICIO (parpadeante) ───
-  // Calcula un valor de pulso entre 0 y 1 usando la función seno
-  const pulse = (Math.sin(t*3)+1)/2;
-  // El color va cambiando de opacidad para crear un efecto de parpadeo
-  ctx.fillStyle = `rgba(255,200,50,${0.5 + pulse*0.5})`;
-  ctx.font = 'bold 22px monospace';
-  ctx.fillText('PRESS ENTER TO START', LOGICAL_W/2, 390);
-
-  // ─── BOTÓN "JUGAR" (solo en móvil) ───
-  if (showTouchControls) {
-    const bw = 200, bh = 52;
-    const bx = LOGICAL_W/2 - bw/2, by = 430;
-    const hover = mouse.x > bx && mouse.x < bx+bw && mouse.y > by && mouse.y < by+bh;
-    ctx.fillStyle = hover ? '#cc0000' : '#880000';
-    ctx.fillRect(bx, by, bw, bh);
-    ctx.strokeStyle = '#ff4444';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(bx, by, bw, bh);
-    ctx.fillStyle = '#fff';
+  // ─── MENSAJE DE INICIO (oculto en móvil) ───
+  if (!showTouchControls) {
+    const pulse = (Math.sin(t*3)+1)/2;
+    ctx.fillStyle = `rgba(255,200,50,${0.5 + pulse*0.5})`;
     ctx.font = 'bold 22px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('JUGAR', LOGICAL_W/2, by + 34);
-    _titlePlayBtn = { x: bx, y: by, w: bw, h: bh };
+    ctx.fillText('PRESS ENTER TO START', LOGICAL_W/2, 390);
+  }
+
+  // ─── BOTONES "JUGAR" y "OPCIONES" (lado a lado) ───
+  const btnW = 160, btnH = 48, btnGap = 14;
+  const btnY = showTouchControls ? 370 : 440;
+  const totalW = btnW * 2 + btnGap;
+  const startX = LOGICAL_W / 2 - totalW / 2;
+
+  // JUGAR
+  const jx = startX, jy = btnY;
+  const hovJ = mouse.x > jx && mouse.x < jx+btnW && mouse.y > jy && mouse.y < jy+btnH;
+  ctx.fillStyle = hovJ ? '#cc0000' : '#880000';
+  ctx.beginPath(); ctx.roundRect(jx, jy, btnW, btnH, 6); ctx.fill();
+  ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(jx, jy, btnW, btnH, 6); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 20px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('JUGAR', jx + btnW / 2, jy + 31);
+  _titlePlayBtn = { x: jx, y: jy, w: btnW, h: btnH };
+
+  // OPCIONES
+  const ox = startX + btnW + btnGap, oy = btnY;
+  const hovO = mouse.x > ox && mouse.x < ox+btnW && mouse.y > oy && mouse.y < oy+btnH;
+  ctx.fillStyle = hovO ? '#2a4a3a' : '#1a2a1a';
+  ctx.beginPath(); ctx.roundRect(ox, oy, btnW, btnH, 6); ctx.fill();
+  ctx.strokeStyle = '#4aff8a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(ox, oy, btnW, btnH, 6); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px monospace';
+  ctx.fillText('OPCIONES', ox + btnW / 2, oy + 29);
+  _titleOptsBtn = { x: ox, y: oy, w: btnW, h: btnH };
+
+  // ─── OVERLAY DE OPCIONES EN TÍTULO ───
+  if (_titleOptionsOpen) {
+    drawTitleOptions();
   }
 
   // Restablece propiedades por defecto
@@ -336,7 +365,7 @@ function drawPauseOverlay(gs) {
 
   // ─── BOTÓN: OPCIONES ───
   const by2 = by1 + bh + 8;
-  const optH = optionsOpen ? 145 : bh;
+  const optH = optionsOpen ? 160 : bh;
   const hov2 = mouse.x > bx && mouse.x < bx+bw && mouse.y > by2 && mouse.y < by2+optH;
   ctx.fillStyle = hov2 ? '#2a4a3a' : '#1a2a1a';
   ctx.beginPath(); ctx.roundRect(bx, by2, bw, optH, 6); ctx.fill();
@@ -348,49 +377,59 @@ function drawPauseOverlay(gs) {
 
   // Controles de volumen (solo si OPCIONES está expandido)
   if (optionsOpen) {
-    const vol = typeof masterVolume !== 'undefined' ? masterVolume : 1;
-    const pct = Math.round(vol * 100);
-
-    // Barra de volumen
-    const barX = bx + 30, barY = by2 + 50, barW = bw - 60, barH = 16;
-    ctx.fillStyle = '#333';
-    ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 8); ctx.fill();
-    ctx.fillStyle = '#4aff8a';
-    ctx.beginPath(); ctx.roundRect(barX, barY, barW * vol, barH, 8); ctx.fill();
-
-    // Texto del porcentaje
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText(pct + '%', LOGICAL_W / 2, barY + 12);
-
-    // Botón − (restar volumen)
-    const minusX = barX - 26, minusY = barY - 2, minusS = 20;
-    const hovMinus = mouse.x > minusX && mouse.x < minusX+minusS && mouse.y > minusY && mouse.y < minusY+minusS;
-    ctx.fillStyle = hovMinus ? '#555' : '#222';
-    ctx.beginPath(); ctx.roundRect(minusX, minusY, minusS, minusS, 4); ctx.fill();
-    ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(minusX, minusY, minusS, minusS, 4); ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText('−', minusX + minusS/2, minusY + minusS/2 + 5);
-
-    // Botón + (sumar volumen)
-    const plusX = barX + barW + 6, plusY = minusY;
-    const hovPlus = mouse.x > plusX && mouse.x < plusX+minusS && mouse.y > plusY && mouse.y < plusY+minusS;
-    ctx.fillStyle = hovPlus ? '#555' : '#222';
-    ctx.beginPath(); ctx.roundRect(plusX, plusY, minusS, minusS, 4); ctx.fill();
-    ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.roundRect(plusX, plusY, minusS, minusS, 4); ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 14px monospace';
-    ctx.fillText('+', plusX + minusS/2, plusY + minusS/2 + 5);
-
-    // Guarda bounds de los botones de volumen para detección de clics
-    gs._pauseVolMinus = { x: minusX, y: minusY, w: minusS, h: minusS };
-    gs._pauseVolPlus = { x: plusX, y: plusY, w: minusS, h: minusS };
+    const mVol = typeof masterVolume !== 'undefined' ? masterVolume : 1;
+    const sVol = typeof sfxVolume !== 'undefined' ? sfxVolume : 1;
+    const barW = bw - 60, barH = 12;
+    const drawVolSlider = function(label, vol, barY, minusKey, plusKey) {
+      // Etiqueta
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, bx + 30, barY + 10);
+      // Barra
+      const barX = bx + 70, bw2 = barW - 40;
+      ctx.fillStyle = '#333';
+      ctx.beginPath(); ctx.roundRect(barX, barY + 14, bw2, barH, 6); ctx.fill();
+      ctx.fillStyle = '#4aff8a';
+      ctx.beginPath(); ctx.roundRect(barX, barY + 14, bw2 * vol, barH, 6); ctx.fill();
+      // Texto porcentaje
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(Math.round(vol * 100) + '%', barX + bw2 / 2, barY + 24);
+      // Botón −
+      const btnS = 18;
+      const minX = barX - btnS - 2, minY = barY + 12;
+      ctx.fillStyle = '#333';
+      ctx.beginPath(); ctx.roundRect(minX, minY, btnS, btnS, 4); ctx.fill();
+      ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(minX, minY, btnS, btnS, 4); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('−', minX + btnS / 2, minY + btnS / 2 + 4);
+      // Botón +
+      const pluX = barX + bw2 + 2, pluY = minY;
+      ctx.fillStyle = '#333';
+      ctx.beginPath(); ctx.roundRect(pluX, pluY, btnS, btnS, 4); ctx.fill();
+      ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(pluX, pluY, btnS, btnS, 4); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.fillText('+', pluX + btnS / 2, pluY + btnS / 2 + 4);
+      ctx.textAlign = 'center';
+      return { minus: { x: minX, y: minY, w: btnS, h: btnS }, plus: { x: pluX, y: pluY, w: btnS, h: btnS } };
+    };
+    // MUSIC slider
+    const mBtns = drawVolSlider('MUSIC', mVol, by2 + 38, '_pauseVolMinus', '_pauseVolPlus');
+    gs._pauseVolMinus = mBtns.minus;
+    gs._pauseVolPlus = mBtns.plus;
+    // SFX slider
+    const sBtns = drawVolSlider('SFX', sVol, by2 + 68, '_pauseSfxMinus', '_pauseSfxPlus');
+    gs._pauseSfxMinus = sBtns.minus;
+    gs._pauseSfxPlus = sBtns.plus;
 
     // ─── BOTÓN: BUTTON LAYOUT ───
-    const layoutBtnY = by2 + 97;
+    const layoutBtnY = by2 + 108;
     const hovLayout = mouse.x > bx && mouse.x < bx+bw && mouse.y > layoutBtnY && mouse.y < layoutBtnY+bh;
     ctx.fillStyle = hovLayout ? '#2a4a6a' : '#1a2a3a';
     ctx.beginPath(); ctx.roundRect(bx, layoutBtnY, bw, bh, 6); ctx.fill();
@@ -419,6 +458,95 @@ function drawPauseOverlay(gs) {
     options: { x: bx, y: by2, w: bw, h: optH },
     menu: { x: bx, y: by3, w: bw, h: bh }
   };
+
+  ctx.restore();
+  ctx.textAlign = 'left';
+}
+
+// ─── OVERLAY DE OPCIONES EN PANTALLA DE TÍTULO ───
+// Panel con controles de volumen MUSIC y SFX accesible desde el título (móvil)
+function drawTitleOptions() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+  ctx.textAlign = 'center';
+
+  const pw = 280, ph = 200;
+  const px = LOGICAL_W / 2 - pw / 2, py = LOGICAL_H / 2 - ph / 2 - 20;
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 10); ctx.fill();
+  ctx.strokeStyle = '#4aff8a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 10); ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('OPCIONES', LOGICAL_W / 2, py + 30);
+
+  // Helper para dibujar un slider (label + − barra +)
+  const drawSlider = function(label, vol, rowY) {
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, px + 20, rowY + 14);
+    const btnS = 18;
+    const cLeft = px + 70;
+    const cRight = px + pw - 12;
+    const avail = cRight - cLeft;
+    const barW = avail - btnS * 2 - 8;
+    // Minus
+    let mx = cLeft, my = rowY;
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(mx, my, btnS, btnS, 4); ctx.fill();
+    ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(mx, my, btnS, btnS, 4); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('−', mx + btnS / 2, my + btnS / 2 + 5);
+    // Plus
+    let px2 = cRight - btnS, py2 = my;
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(px2, py2, btnS, btnS, 4); ctx.fill();
+    ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(px2, py2, btnS, btnS, 4); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.fillText('+', px2 + btnS / 2, py2 + btnS / 2 + 5);
+    // Bar
+    const barX = mx + btnS + 4, barY = rowY + 3;
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW, 12, 6); ctx.fill();
+    ctx.fillStyle = '#4aff8a';
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW * vol, 12, 6); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round(vol * 100) + '%', barX + barW / 2, barY + 10);
+    return { minus: { x: mx, y: my, w: btnS, h: btnS }, plus: { x: px2, y: py2, w: btnS, h: btnS } };
+  };
+
+  const mVol = typeof masterVolume !== 'undefined' ? masterVolume : 1;
+  const mBtns = drawSlider('MUSIC', mVol, py + 46);
+  _titleMusicMinus = mBtns.minus;
+  _titleMusicPlus = mBtns.plus;
+
+  const sVol = typeof sfxVolume !== 'undefined' ? sfxVolume : 1;
+  const sBtns = drawSlider('SFX', sVol, py + 76);
+  _titleSfxMinus = sBtns.minus;
+  _titleSfxPlus = sBtns.plus;
+
+  // BACK button
+  const bkW = 120, bkH = 36;
+  const bkx = LOGICAL_W / 2 - bkW / 2, bky = py + ph - 50;
+  const hovBk = mouse.x > bkx && mouse.x < bkx + bkW && mouse.y > bky && mouse.y < bky + bkH;
+  ctx.fillStyle = hovBk ? '#5a2a2a' : '#3a1a1a';
+  ctx.beginPath(); ctx.roundRect(bkx, bky, bkW, bkH, 6); ctx.fill();
+  ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(bkx, bky, bkW, bkH, 6); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('VOLVER', LOGICAL_W / 2, bky + 24);
+  _titleOptsBack = { x: bkx, y: bky, w: bkW, h: bkH };
 
   ctx.restore();
   ctx.textAlign = 'left';

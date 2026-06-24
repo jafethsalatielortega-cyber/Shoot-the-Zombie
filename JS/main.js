@@ -52,16 +52,59 @@ function loop(timestamp) {
     // a la pantalla de selección de mapa (gracias al wrapper de mapSystem.js).
     case 'title':
       if (isPortraitBlock) { drawOrientationOverlay(); break; }
+      startMenuMusic();
       drawTitleScreen();
-      const titleClick = (mouse.down || pointerPressed) && _titlePlayBtn &&
-        mouse.x > _titlePlayBtn.x && mouse.x < _titlePlayBtn.x + _titlePlayBtn.w &&
-        mouse.y > _titlePlayBtn.y && mouse.y < _titlePlayBtn.y + _titlePlayBtn.h;
-      if ((keys['Enter'] || keys['NumpadEnter']) || titleClick) {
-        if (!gs._enterBuf) {
-          gs._enterBuf = true;
-          startGame();
+
+      if (_titleOptionsOpen) {
+        // ─── OVERLAY DE OPCIONES EN TÍTULO ───
+        if ((mouse.down || pointerPressed) && !gs._titleOptsClickBuf) {
+          gs._titleOptsClickBuf = true;
+          // MUSIC −
+          if (_titleMusicMinus && mouse.x > _titleMusicMinus.x && mouse.x < _titleMusicMinus.x + _titleMusicMinus.w &&
+              mouse.y > _titleMusicMinus.y && mouse.y < _titleMusicMinus.y + _titleMusicMinus.h) {
+            if (typeof masterVolume !== 'undefined') { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); updateBgMusicVolume(); updateMenuMusicVolume(); try { playTone(600, 600, 'sine', 0.08, 0.15); } catch(e){} }
+          }
+          // MUSIC +
+          if (_titleMusicPlus && mouse.x > _titleMusicPlus.x && mouse.x < _titleMusicPlus.x + _titleMusicPlus.w &&
+              mouse.y > _titleMusicPlus.y && mouse.y < _titleMusicPlus.y + _titleMusicPlus.h) {
+            if (typeof masterVolume !== 'undefined') { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); updateBgMusicVolume(); updateMenuMusicVolume(); try { playTone(800, 800, 'sine', 0.08, 0.15); } catch(e){} }
+          }
+          // SFX −
+          if (_titleSfxMinus && mouse.x > _titleSfxMinus.x && mouse.x < _titleSfxMinus.x + _titleSfxMinus.w &&
+              mouse.y > _titleSfxMinus.y && mouse.y < _titleSfxMinus.y + _titleSfxMinus.h) {
+            if (typeof sfxVolume !== 'undefined') { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); try { playTone(600, 600, 'sine', 0.08, 0.15); } catch(e){} }
+          }
+          // SFX +
+          if (_titleSfxPlus && mouse.x > _titleSfxPlus.x && mouse.x < _titleSfxPlus.x + _titleSfxPlus.w &&
+              mouse.y > _titleSfxPlus.y && mouse.y < _titleSfxPlus.y + _titleSfxPlus.h) {
+            if (typeof sfxVolume !== 'undefined') { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); try { playTone(800, 800, 'sine', 0.08, 0.15); } catch(e){} }
+          }
+          // BACK
+          if (_titleOptsBack && mouse.x > _titleOptsBack.x && mouse.x < _titleOptsBack.x + _titleOptsBack.w &&
+              mouse.y > _titleOptsBack.y && mouse.y < _titleOptsBack.y + _titleOptsBack.h) {
+            _titleOptionsOpen = false;
+          }
         }
-      } else { gs._enterBuf = false; }
+        if (!mouse.down && !pointerPressed) gs._titleOptsClickBuf = false;
+      } else {
+        const titleClick = (mouse.down || pointerPressed) && _titlePlayBtn &&
+          mouse.x > _titlePlayBtn.x && mouse.x < _titlePlayBtn.x + _titlePlayBtn.w &&
+          mouse.y > _titlePlayBtn.y && mouse.y < _titlePlayBtn.y + _titlePlayBtn.h;
+        if ((keys['Enter'] || keys['NumpadEnter']) || titleClick) {
+          if (!gs._enterBuf) {
+            gs._enterBuf = true;
+            _titleOptionsOpen = false;
+            startGame();
+          }
+        } else { gs._enterBuf = false; }
+
+        // ─── BOTÓN OPCIONES EN TÍTULO ───
+        if ((mouse.down || pointerPressed) && _titleOptsBtn &&
+            mouse.x > _titleOptsBtn.x && mouse.x < _titleOptsBtn.x + _titleOptsBtn.w &&
+            mouse.y > _titleOptsBtn.y && mouse.y < _titleOptsBtn.y + _titleOptsBtn.h) {
+          _titleOptionsOpen = true;
+        }
+      }
       break;
 
     // ─── ESTADO DE JUEGO ACTIVO ───
@@ -192,6 +235,20 @@ function loop(timestamp) {
                 mouse.x > gs._pauseVolPlus.x && mouse.x < gs._pauseVolPlus.x + gs._pauseVolPlus.w &&
                 mouse.y > gs._pauseVolPlus.y && mouse.y < gs._pauseVolPlus.y + gs._pauseVolPlus.h) {
               if (typeof masterVolume !== 'undefined') { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); if (typeof bgMusic !== 'undefined' && bgMusic) bgMusic.volume = 0.4 * masterVolume; try { playTone(800, 800, 'sine', 0.08, 0.15); } catch(e){} }
+              handled = true;
+            }
+            // ─── SFX − (dentro de opciones expandidas) ───
+            if (!handled && gs._pauseSfxMinus &&
+                mouse.x > gs._pauseSfxMinus.x && mouse.x < gs._pauseSfxMinus.x + gs._pauseSfxMinus.w &&
+                mouse.y > gs._pauseSfxMinus.y && mouse.y < gs._pauseSfxMinus.y + gs._pauseSfxMinus.h) {
+              if (typeof sfxVolume !== 'undefined') { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); try { playTone(600, 600, 'sine', 0.08, 0.15); } catch(e){} }
+              handled = true;
+            }
+            // ─── SFX + (dentro de opciones expandidas) ───
+            if (!handled && gs._pauseSfxPlus &&
+                mouse.x > gs._pauseSfxPlus.x && mouse.x < gs._pauseSfxPlus.x + gs._pauseSfxPlus.w &&
+                mouse.y > gs._pauseSfxPlus.y && mouse.y < gs._pauseSfxPlus.y + gs._pauseSfxPlus.h) {
+              if (typeof sfxVolume !== 'undefined') { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); try { playTone(800, 800, 'sine', 0.08, 0.15); } catch(e){} }
               handled = true;
             }
             // ─── BUTTON LAYOUT (dentro de opciones expandidas) ───

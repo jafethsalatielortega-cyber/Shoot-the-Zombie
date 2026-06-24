@@ -377,6 +377,7 @@ function startGame() {
   gs.waveCompleteTimer = 0;
   gs.showWaveComplete = false;
   gs.waveAnnouncement = { active: true, wave: 1, opacity: 1.0 };
+  stopMenuMusic();
   startBgMusic();                                         // Inicia música de fondo en bucle
   gs.boss = null;
   gs.bossWave = false;

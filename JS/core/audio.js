@@ -10,8 +10,12 @@ let audioCtx = null;
 let waveSound = null;
 // Objeto Audio para la música de fondo (tema principal)
 let bgMusic = null;
-// Volumen maestro global (0.0 - 1.0). Se aplica a todos los sonidos.
+// Objeto Audio para la música del menú principal
+let menuMusic = null;
+// Volumen maestro global (0.0 - 1.0). Controla la música de fondo.
 let masterVolume = 1.0;
+// Volumen de efectos de sonido (SFX) separado (0.0 - 1.0).
+let sfxVolume = 1.0;
 
 // Intenta cargar el archivo MP3 del sonido de cambio de oleada
 try {
@@ -22,7 +26,7 @@ try {
 
 // Intenta cargar el archivo MP3 de la música de fondo (tema principal)
 try {
-  bgMusic = new Audio('THEMES/Zombie Shooter Soundtrack - Action 12.mp3');
+  bgMusic = new Audio('THEMES/Zombie shooter soundtrack.mp3');
   bgMusic.preload = 'auto';
   bgMusic.loop = false;         // Maneja el bucle manualmente para control preciso
   bgMusic.volume = 0.4;         // Volumen base (se ajusta con masterVolume)
@@ -30,6 +34,14 @@ try {
   bgMusic.addEventListener('ended', function() {
     try { this.currentTime = 0; this.play(); } catch(e) {}
   });
+} catch(e) {}
+
+// Intenta cargar el archivo MP3 de la música del menú principal
+try {
+  menuMusic = new Audio('THEMES/Tensions Run High.mp3');
+  menuMusic.preload = 'auto';
+  menuMusic.loop = true;
+  menuMusic.volume = 0.4;
 } catch(e) {}
 
 // Reproduce el sonido de cambio de oleada desde el inicio
@@ -42,6 +54,29 @@ function playWaveSound() {
 function startBgMusic() {
   if (!bgMusic) return;
   try { bgMusic.currentTime = 0; bgMusic.volume = 0.4 * masterVolume; bgMusic.play(); } catch(e) {}
+}
+
+// Actualiza el volumen de la música de fondo según masterVolume
+function updateBgMusicVolume() {
+  if (bgMusic) try { bgMusic.volume = 0.4 * masterVolume; } catch(e) {}
+}
+
+// Actualiza el volumen de la música del menú según masterVolume
+function updateMenuMusicVolume() {
+  if (menuMusic) try { menuMusic.volume = 0.4 * masterVolume; } catch(e) {}
+}
+
+// Inicia la música del menú principal en bucle
+function startMenuMusic() {
+  if (!menuMusic) return;
+  if (!menuMusic.paused) return;
+  try { menuMusic.currentTime = 0; menuMusic.volume = 0.4 * masterVolume; menuMusic.play(); } catch(e) {}
+}
+
+// Detiene la música del menú principal
+function stopMenuMusic() {
+  if (!menuMusic) return;
+  try { menuMusic.pause(); menuMusic.currentTime = 0; } catch(e) {}
 }
 
 // Detiene la música de fondo
@@ -115,7 +150,7 @@ function playTone(freq1, freq2, type, duration, vol) {
     osc.type = type;
     osc.frequency.setValueAtTime(freq1, now);
     if (freq2 !== freq1) osc.frequency.exponentialRampToValueAtTime(freq2, now + duration);
-    gain.gain.setValueAtTime(vol * masterVolume, now);
+    gain.gain.setValueAtTime(vol * sfxVolume, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
     osc.start(now);
     osc.stop(now + duration);
@@ -137,7 +172,7 @@ function playNoise(duration, vol) {
     src.buffer = buf;
     src.connect(gain);
     gain.connect(audioCtx.destination);
-    gain.gain.setValueAtTime(vol * masterVolume, now);
+    gain.gain.setValueAtTime(vol * sfxVolume, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
     src.start(now);
   } catch(e) {}
