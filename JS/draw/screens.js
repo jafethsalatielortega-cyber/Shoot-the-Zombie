@@ -554,8 +554,8 @@ function drawTitleOptions() {
 
 // ─── [NEW] LAYOUT EDITOR ───
 // Permite al jugador mover y redimensionar los botones táctiles
-const _BTN_NAMES = ['shoot','jump','sprint','switch','reload','knife','board'];
-const _BTN_LABELS = ['FIRE','JUMP','RUN','GUN','RLD','KNIFE','BOARD'];
+const _BTN_NAMES = ['shoot','jump','sprint','switch','reload','knife','grenade','board'];
+const _BTN_LABELS = ['FIRE','JUMP','RUN','GUN','RLD','KNIFE','GREN','BOARD'];
 const _BTN_PROPS = [
   () => ({ x: BTN_SHOOT_X, y: BTN_SHOOT_Y, r: BTN_SHOOT_R }),
   (x,y,r) => { BTN_SHOOT_X=x; BTN_SHOOT_Y=y; BTN_SHOOT_R=r; },
@@ -569,6 +569,8 @@ const _BTN_PROPS = [
   (x,y,r) => { BTN_RELOAD_X=x; BTN_RELOAD_Y=y; BTN_RELOAD_R=r; },
   () => ({ x: BTN_KNIFE_X, y: BTN_KNIFE_Y, r: BTN_KNIFE_R }),
   (x,y,r) => { BTN_KNIFE_X=x; BTN_KNIFE_Y=y; BTN_KNIFE_R=r; },
+  () => ({ x: BTN_GRENADE_X, y: BTN_GRENADE_Y, r: BTN_GRENADE_R }),
+  (x,y,r) => { BTN_GRENADE_X=x; BTN_GRENADE_Y=y; BTN_GRENADE_R=r; },
   () => ({ x: BTN_BOARD_X, y: BTN_BOARD_Y, r: BTN_BOARD_R }),
   (x,y,r) => { BTN_BOARD_X=x; BTN_BOARD_Y=y; BTN_BOARD_R=r; },
 ];
@@ -589,9 +591,9 @@ function drawLayoutEditor(gs) {
 
   // ─── BOTONES DE SELECCIÓN ───
   const idx = gs._layoutEditIdx || 0;
-  const selW = LOGICAL_W / 7;
-  ctx.font = 'bold 13px monospace';
-  for (let i = 0; i < 7; i++) {
+  const selW = LOGICAL_W / 8;
+  ctx.font = 'bold 11px monospace';
+  for (let i = 0; i < 8; i++) {
     const sx = i * selW, sy = 75, sw = selW - 4, sh = 28;
     const sel = i === idx;
     const hov = mouse.x > sx && mouse.x < sx+sw && mouse.y > sy && mouse.y < sy+sh;

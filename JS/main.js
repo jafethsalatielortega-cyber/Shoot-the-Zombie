@@ -155,7 +155,7 @@ function loop(timestamp) {
             const bp = getBtnProps(idx);
 
             // ─── SELECTOR DE BOTÓN ───
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 8; i++) {
               const b = gs['_layoutBtn_' + i];
               if (b && mouse.x > b.x && mouse.x < b.x + b.w && mouse.y > b.y && mouse.y < b.y + b.h) {
                 gs._layoutEditIdx = i;
