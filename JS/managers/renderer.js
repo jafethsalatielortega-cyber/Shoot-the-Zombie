@@ -272,6 +272,19 @@ function drawTouchGamepad(gs) {
   ctx.textAlign = 'center';
   ctx.fillText('KNIFE', BTN_KNIFE_X, BTN_KNIFE_Y + 3);
 
+  // ─── BOTÓN GRENADE ───
+  ctx.beginPath();
+  ctx.arc(BTN_GRENADE_X, BTN_GRENADE_Y, BTN_GRENADE_R, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,120,30,0.5)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,160,60,0.8)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GREN', BTN_GRENADE_X, BTN_GRENADE_Y + 3);
+
   // ─── BOTÓN BOARD (solo en mapa bus) ───
   if (gs && gs.selectedMap === 2) {
     ctx.beginPath();
