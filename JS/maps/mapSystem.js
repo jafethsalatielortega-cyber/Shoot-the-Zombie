@@ -260,6 +260,7 @@
       ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
       if (!gs) gs = createGameState();
       if (_portraitBlock) { drawOrientationOverlay(); pointerPressed = false; return; }
+      if (typeof updateGamepad === 'function') updateGamepad();
       drawMapSelectScreen();
       handleMapSelectInput(dt);
       if (!mouse.down && !pointerPressed && gs) gs._clickBuf = false;

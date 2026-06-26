@@ -436,9 +436,11 @@ function updateGamepad() {
   now['KeyR']      = !!(btns[2]?.pressed);
   now['KeyQ']      = !!(btns[3]?.pressed);
   now['ShiftLeft'] = !!(btns[4]?.pressed);
+  now['KeyG']      = !!(btns[5]?.pressed);
+  now['KeyT']      = !!(btns[6]?.pressed);
   const r2val = btns[7]?.value || 0;
   now['_mouseDown'] = btns[7]?.pressed || r2val > 0.3;
-  now['Escape'] = !!(btns[9]?.pressed);
+  now['KeyP']      = !!(btns[9]?.pressed);
 
   now['ArrowLeft']  = !!(btns[14]?.pressed);
   now['ArrowRight'] = !!(btns[15]?.pressed);
@@ -456,6 +458,140 @@ function updateGamepad() {
     if (now[k] === undefined || !now[k]) keys[k] = false;
   }
   _gpPrevKeys = now;
+
+  // ─── NAVEGACIÓN EN MENÚS CON GAMEPAD ───
+  handleGamepadMenu(now, prev);
+}
+
+// ─── NAVEGACIÓN EN MENÚS CON GAMEPAD ───
+// Variables de estado para el focus en menús
+let _gpMenuState = '';
+let _gpMenuFocus = 0;
+
+function handleGamepadMenu(now, prev) {
+  // Solo funciona si gs está definido
+  if (typeof gs === 'undefined' || !gs) return;
+
+  // ─── SELECCIÓN DE MAPA ───
+  if (gs.state === 'mapSelect') {
+    const gap = 60, cardW = 380, cardH = 260;
+    const startX = (LOGICAL_W - cardW * 2 - gap) / 2;
+    const cardY = 100;
+    if (now['ArrowLeft'] && !prev['ArrowLeft']) {
+      keys['Digit1'] = true;
+      mouse.x = startX + cardW / 2;
+      mouse.y = cardY + cardH / 2;
+    }
+    if (now['ArrowRight'] && !prev['ArrowRight']) {
+      keys['Digit2'] = true;
+      mouse.x = startX + cardW + gap + cardW / 2;
+      mouse.y = cardY + cardH / 2;
+    }
+    return;
+  }
+
+  const isTitle = gs.state === 'title';
+  const isPaused = gs.state === 'playing' && gs.paused && !gs._layoutEditorOpen;
+  const isGameOver = gs.state === 'gameover';
+  if (!isTitle && !isPaused && !isGameOver) { _gpMenuState = ''; return; }
+
+  // ─── CONSTRUIR LISTA DE BOTONES SEGÚN EL ESTADO ───
+  let buttons = [];
+  if (isTitle) {
+    if (gs.state === 'title' && typeof _titleOptionsOpen !== 'undefined' && _titleOptionsOpen) {
+      buttons = [_titleMusicMinus, _titleMusicPlus, _titleSfxMinus, _titleSfxPlus, _titleOptsBack].filter(Boolean);
+    } else {
+      buttons = [_titlePlayBtn, _titleOptsBtn].filter(Boolean);
+    }
+  } else if (isPaused) {
+    if (gs._pauseOptionsOpen) {
+      buttons = [gs._pauseVolMinus, gs._pauseVolPlus, gs._pauseSfxMinus, gs._pauseSfxPlus, gs._pauseLayoutBtn, gs._pauseBtns?.menu].filter(Boolean);
+    } else if (gs._pauseBtns) {
+      buttons = [gs._pauseBtns.resume, gs._pauseBtns.options, gs._pauseBtns.menu].filter(Boolean);
+    }
+  } else if (isGameOver) {
+    buttons = [
+      { x: LOGICAL_W/2-140, y: 310, w: 280, h: 44 },
+      { x: LOGICAL_W/2-140, y: 368, w: 280, h: 44 }
+    ];
+  }
+  if (!buttons.length) return;
+
+  // ─── ID ÚNICO DEL ESTADO PARA REINICIAR FOCUS AL CAMBIAR ───
+  const stateId = gs.state + '|' + (!!_titleOptionsOpen) + '|' + (!!gs._pauseOptionsOpen) + '|' + (!!gs.paused);
+  if (_gpMenuState !== stateId) {
+    _gpMenuState = stateId;
+    _gpMenuFocus = 0;
+  }
+
+  // ─── MOVER EL CURSOR DEL MOUSE AL BOTÓN ENFOCADO ───
+  // Para que los efectos hover de los botones se activen con el mando
+  function gpMoveCursorTo(idx) {
+    const btn = buttons[idx];
+    if (btn) { mouse.x = btn.x + btn.w / 2; mouse.y = btn.y + btn.h / 2; }
+  }
+  gpMoveCursorTo(_gpMenuFocus);
+
+  // ─── NAVEGAR CON D-PAD ARRIBA/ABAJO ───
+  if (now['ArrowUp'] && !prev['ArrowUp']) {
+    _gpMenuFocus = (_gpMenuFocus - 1 + buttons.length) % buttons.length;
+    gpMoveCursorTo(_gpMenuFocus);
+  }
+  if (now['ArrowDown'] && !prev['ArrowDown']) {
+    _gpMenuFocus = (_gpMenuFocus + 1) % buttons.length;
+    gpMoveCursorTo(_gpMenuFocus);
+  }
+
+  // ─── AJUSTAR VOLUMEN CON D-PAD IZQUIERDA/DERECHA ───
+  // Dentro de opciones: MUSIC −/MUSIC + están en índices 0 y 1; SFX −/+ en 2 y 3
+  if (now['ArrowLeft'] && !prev['ArrowLeft']) {
+    if (isTitle && _titleOptionsOpen) {
+      if (_gpMenuFocus === 0) { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); updateMenuMusicVolume?.(); updateBgMusicVolume?.(); }
+      if (_gpMenuFocus === 2) { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); }
+    }
+    if (isPaused && gs._pauseOptionsOpen) {
+      if (_gpMenuFocus === 0) { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); if (bgMusic) bgMusic.volume = 0.4 * masterVolume; }
+      if (_gpMenuFocus === 2) { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); }
+    }
+  }
+  if (now['ArrowRight'] && !prev['ArrowRight']) {
+    if (isTitle && _titleOptionsOpen) {
+      if (_gpMenuFocus === 0) { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); updateMenuMusicVolume?.(); updateBgMusicVolume?.(); }
+      if (_gpMenuFocus === 2) { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); }
+    }
+    if (isPaused && gs._pauseOptionsOpen) {
+      if (_gpMenuFocus === 0) { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); if (bgMusic) bgMusic.volume = 0.4 * masterVolume; }
+      if (_gpMenuFocus === 2) { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); }
+    }
+  }
+
+  // ─── CONFIRMAR CON CROSS (btn[0]) ───
+  if (now['Space'] && !prev['Space']) {
+    const btn = buttons[_gpMenuFocus];
+    if (btn) {
+      mouse.x = btn.x + btn.w / 2;
+      mouse.y = btn.y + btn.h / 2;
+      pointerPressed = true;
+      // En título, si el foco NO es JUGAR, evitar que Enter inicie el juego
+      if (isTitle && !_titleOptionsOpen && _gpMenuFocus !== 0) {
+        keys['Enter'] = false;
+        keys['NumpadEnter'] = false;
+      }
+    }
+  }
+
+  // ─── CANCELAR/VOLVER CON CIRCLE (btn[1]) ───
+  if (now['KeyE'] && !prev['KeyE']) {
+    if (_titleOptionsOpen) {
+      if (_titleOptsBack) {
+        mouse.x = _titleOptsBack.x + _titleOptsBack.w / 2;
+        mouse.y = _titleOptsBack.y + _titleOptsBack.h / 2;
+        pointerPressed = true;
+      }
+    } else if (isPaused) {
+      gs.paused = false;
+    }
+  }
 }
 
 canvas.addEventListener('pointerdown', handlePointerDown);
