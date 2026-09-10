@@ -39,11 +39,6 @@ function loop(timestamp) {
   // ─── POLLING DEL MANDO (GAMEPAD) ───
   if (typeof updateGamepad === 'function') updateGamepad();
 
-  // ─── [NEW] PORTRAIT PAUSE ───
-  // En teléfonos en vertical: detiene el juego y muestra overlay.
-  // Se reanuda automáticamente al girar a horizontal.
-  const isPortraitBlock = showTouchControls && window.innerWidth < window.innerHeight && window.innerWidth < 768;
-
   // ─── MÁQUINA DE ESTADOS ───
   switch(gs.state) {
     // ─── PANTALLA DE TÍTULO ───
@@ -51,7 +46,6 @@ function loop(timestamp) {
     // Al presionar ENTER se llama a startGame(), que inicia la transición
     // a la pantalla de selección de mapa (gracias al wrapper de mapSystem.js).
     case 'title':
-      if (isPortraitBlock) { drawOrientationOverlay(); break; }
       startMenuMusic();
       drawTitleScreen();
 
@@ -115,13 +109,6 @@ function loop(timestamp) {
     // - renderGame(): dibujar todo en el canvas
     // - Evento meteorito (mapa 2, a partir de oleada 10)
     case 'playing':
-      // ─── PORTRAIT BLOCK ───
-      if (isPortraitBlock) {
-        renderGame(gs);
-        drawTransitionOverlay(gs);
-        drawOrientationOverlay();
-        break;
-      }
       // ─── PAUSA CON TECLA P ───
       // Alterna entre pausado y reanudado; usa buffer para detectar flanco
       if (keys['KeyP'] && !gs._pauseBuf) {
@@ -365,7 +352,7 @@ function loop(timestamp) {
       }
       if (gs.selectedMap === 2 && meteorEvent.phase === 'burning') {
         drawAshParticles(gs);
-        if (Math.floor(Date.now() / 400) % 3 === 0) drawHeatShimmer(gs);
+        if (!lowPerformanceMode && Math.floor(Date.now() / 400) % 3 === 0) drawHeatShimmer(gs);
       }
       break;
 
@@ -374,7 +361,6 @@ function loop(timestamp) {
     // Opciones: presionar R para reiniciar, o hacer clic en "Play Again"
     // (reinicia) o "Menu" (vuelve a la pantalla de título).
     case 'gameover':
-      if (isPortraitBlock) { drawOrientationOverlay(); break; }
       renderGame(gs);
       drawGameOverScreen(gs);
       // ─── REINICIAR CON TECLA R ───
@@ -387,8 +373,7 @@ function loop(timestamp) {
       }
       if (!keys['KeyR']) { if(gs) gs._rBuf = false; }
       // ─── BOTONES: "PLAY AGAIN" Y "MENU" ───
-      const bx  = LOGICAL_W/2-140, by =310, bw=280, bh=44;
-      const bx2 = LOGICAL_W/2-140, by2=368, bw2=280, bh2=44;
+      const { bx, by, bw, bh, bx2, by2, bw2, bh2 } = getGameOverButtonLayout();
       if ((mouse.down || pointerPressed) && !gs._clickBuf) {
         if (mouse.x>bx && mouse.x<bx+bw && mouse.y>by && mouse.y<by+bh) {
           gs._clickBuf = true;

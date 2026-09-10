@@ -17,6 +17,15 @@ let masterVolume = 1.0;
 // Volumen de efectos de sonido (SFX) separado (0.0 - 1.0).
 let sfxVolume = 1.0;
 
+// Evita rechazos de Promise sin manejar cuando el navegador bloquea autoplay.
+function playMedia(media) {
+  if (!media) return;
+  try {
+    const result = media.play();
+    if (result && typeof result.catch === 'function') result.catch(function(){});
+  } catch(e) {}
+}
+
 // Intenta cargar el archivo MP3 del sonido de cambio de oleada
 try {
   waveSound = new Audio('THEMES/Wavechange.mp3');
@@ -32,7 +41,7 @@ try {
   bgMusic.volume = 0.4;         // Volumen base (se ajusta con masterVolume)
   // Bucle infinito: al terminar, vuelve al inicio
   bgMusic.addEventListener('ended', function() {
-    try { this.currentTime = 0; this.play(); } catch(e) {}
+    try { this.currentTime = 0; playMedia(this); } catch(e) {}
   });
 } catch(e) {}
 
@@ -47,13 +56,13 @@ try {
 // Reproduce el sonido de cambio de oleada desde el inicio
 function playWaveSound() {
   if (!waveSound) return;
-  try { waveSound.currentTime = 0; waveSound.volume = 0.5 * masterVolume; waveSound.play(); } catch(e) {}
+  try { waveSound.currentTime = 0; waveSound.volume = 0.5 * masterVolume; playMedia(waveSound); } catch(e) {}
 }
 
 // Inicia la música de fondo (tema principal) en bucle infinito
 function startBgMusic() {
   if (!bgMusic) return;
-  try { bgMusic.currentTime = 0; bgMusic.volume = 0.4 * masterVolume; bgMusic.play(); } catch(e) {}
+  try { bgMusic.currentTime = 0; bgMusic.volume = 0.4 * masterVolume; playMedia(bgMusic); } catch(e) {}
 }
 
 // Actualiza el volumen de la música de fondo según masterVolume
@@ -69,8 +78,9 @@ function updateMenuMusicVolume() {
 // Inicia la música del menú principal en bucle
 function startMenuMusic() {
   if (!menuMusic) return;
+  if (!audioInit) return;
   if (!menuMusic.paused) return;
-  try { menuMusic.currentTime = 0; menuMusic.volume = 0.4 * masterVolume; menuMusic.play(); } catch(e) {}
+  try { menuMusic.currentTime = 0; menuMusic.volume = 0.4 * masterVolume; playMedia(menuMusic); } catch(e) {}
 }
 
 // Detiene la música del menú principal
@@ -88,24 +98,18 @@ function stopBgMusic() {
 // Indica si el audio ya fue inicializado tras la primera interacción del usuario
 let audioInit = false;
 
-// Solicita pantalla completa y bloquea orientación a landscape en móviles.
-// Se llama en CADA interacción del usuario (toque, click, tecla) para reintentar
-// si la solicitud previa fue denegada o el navegador la ignoró.
+// En móvil intenta entrar una vez a pantalla completa tras un gesto válido.
+// No bloquea la orientación: el juego es jugable tanto vertical como horizontal.
+let immersiveRequestAttempted = false;
 function requestFullscreenAndLock() {
-  // ─── Pantalla completa (móvil y PC) ───
+  if (immersiveRequestAttempted || !(navigator.maxTouchPoints > 0 || 'ontouchstart' in window)) return;
+  immersiveRequestAttempted = true;
   try {
     if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
       const el = document.documentElement;
-      if (el.requestFullscreen) el.requestFullscreen();
+      if (el.requestFullscreen) Promise.resolve(el.requestFullscreen({ navigationUI: 'hide' })).catch(function(){});
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
       else if (el.msRequestFullscreen) el.msRequestFullscreen();
-    }
-  } catch(e) {}
-  // ─── Bloqueo de orientación a landscape en móviles ───
-  // La pantalla se girará automáticamente, el usuario no necesita rotar manualmente
-  try {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(function(){});
     }
   } catch(e) {}
 }

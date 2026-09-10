@@ -2,7 +2,12 @@
 // Todas las medidas y físicas del juego se definen aquí como constantes globales
 
 // Resolución interna del canvas (ancho y alto lógico)
-const LOGICAL_W = 1280, LOGICAL_H = 480;
+// La altura lógica permanece fija para conservar físicas, saltos y posiciones Y.
+// El ancho se adapta en dispositivos táctiles para ofrecer un viewport real en
+// vertical/horizontal sin estirar la imagen. En escritorio conserva 1280×480.
+const BASE_LOGICAL_W = 1280;
+let LOGICAL_W = BASE_LOGICAL_W;
+const LOGICAL_H = 480;
 // Ancho total del mundo horizontal del escenario (escena completa)
 const WORLD_W = 3200;
 // Posición Y del suelo medida desde el borde superior del canvas

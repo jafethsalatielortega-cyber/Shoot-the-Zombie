@@ -23,17 +23,13 @@ function updatePlaying(gs, dt) {
   const p = gs.player;
 
   // ─── [TOUCH] JOYSTICK AIM ───
-  // En teléfono, el jugador apunta hacia donde apunta el joystick
-  if (showTouchControls && p) {
-    if (joystickActive) {
-      const aimSens = 20;
-      mouse.x = p.x - gs.camX + joystickKnobX * aimSens;
-      mouse.y = p.y - 20 + (gs.busCamY || 0) + joystickKnobY * aimSens;
-    } else {
-      // Por defecto: apunta hacia donde mira el jugador
-      mouse.x = p.x - gs.camX + p.dir * 100;
-      mouse.y = p.y - 20 + (gs.busCamY || 0);
-    }
+  // En teléfono, el jugador apunta hacia donde apunta el joystick.
+  // Solo sobreescribe mouse.x/y cuando NO hay un dedo/puntero dedicado apuntando
+  // (touchpad, ratón o segundo dedo en zona de puntería).
+  if (showTouchControls && p && joystickActive && aimPointer === -1) {
+    const aimSens = 20;
+    mouse.x = p.x - gs.camX + joystickKnobX * aimSens;
+    mouse.y = p.y - 20 + (gs.busCamY || 0) + joystickKnobY * aimSens;
   }
 
 // ─── TEMPORIZADORES GENERALES ───
@@ -193,11 +189,8 @@ function updatePlaying(gs, dt) {
   // ─── [NEW] TOUCH SHOOTING ───
   // El botón táctil "FIRE" se integra en la misma señal mouse.down
   // para que el sistema de disparo existente funcione sin cambios.
-  if (touchShooting) { mouse.down = true; }
-  else if (!mouse.down) { /* touch release handled by pointerup */ }
-  // Si touchShooting está false pero mouse.down quedó true del toque anterior,
-  // se limpia para evitar disparo fantasma.
-  if (!touchShooting && mouse.down && showTouchControls) mouse.down = false;
+  // Se combinan las fuentes sin cancelar el mouse en laptops híbridas.
+  mouse.down = mouseButtonDown || touchShooting || Boolean(_gpPrevKeys && _gpPrevKeys._mouseDown);
 
   // ─── RECARGA MANUAL (TECLA R) ───
   // Si presiona R y no está recargando, tiene menos balas que el cargador y tiene munición de reserva

@@ -4,12 +4,40 @@
    dentro del ancho/alto total del elemento, facilitando el diseño. */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* ─── CUERPO DE LA PÁGINA ─── */
 /* Fondo negro sólido para evitar distracciones visuales.
    overflow: hidden oculta las barras de scroll del navegador.
    Flexbox centra el canvas tanto horizontal como verticalmente,
    ocupando toda la ventana (100vw x 100vh). */
-body { background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; }
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ─── LIENZO (CANVAS) ─── */
 /* display: block elimina el espacio extra que algunos navegadores
@@ -18,4 +46,21 @@ body { background: #000; overflow: hidden; display: flex; align-items: center; j
    para que los gráficos pixel-art se vean nítidos y sin difuminado.
    cursor: crosshair cambia el cursor del mouse a una mira de
    precisión, ideal para un juego de disparos. */
-canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+canvas {
+  position: absolute;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  cursor: crosshair;
+  outline: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+body.touch-mode canvas { cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  canvas { image-rendering: auto; }
+}

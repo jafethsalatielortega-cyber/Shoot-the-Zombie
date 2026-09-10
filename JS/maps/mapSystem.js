@@ -21,6 +21,18 @@
   // Fase de animación decorativa de las tarjetas
   let _cardPhase = 0;
 
+  function getCardLayout() {
+    const compact = LOGICAL_W < 700;
+    if (compact) {
+      const cardW = Math.max(220, LOGICAL_W - 28);
+      return { compact, gap: 12, cardW, cardH: 166,
+        startX: (LOGICAL_W - cardW) / 2, cardY: 68 };
+    }
+    const gap = 60, cardW = 380;
+    return { compact, gap, cardW, cardH: 260,
+      startX: (LOGICAL_W - (cardW * 2 + gap)) / 2, cardY: 100 };
+  }
+
 
   // ─── PANTALLA DE SELECCIÓN DE MAPA ───
   // Dibuja la interfaz con dos tarjetas (Ciudad Abandonada y Bus en Movimiento),
@@ -44,8 +56,8 @@
     ctx.shadowColor = 'rgba(255,184,51,0.25)';
     ctx.shadowBlur = 20;
     ctx.fillStyle = '#ffb833';
-    ctx.font = 'bold 36px monospace';
-    ctx.fillText('SELECT YOUR BATTLEFIELD', LOGICAL_W/2, 60);
+    ctx.font = 'bold ' + (LOGICAL_W < 700 ? 21 : 36) + 'px monospace';
+    ctx.fillText(LOGICAL_W < 700 ? 'CHOOSE A MAP' : 'SELECT YOUR BATTLEFIELD', LOGICAL_W/2, LOGICAL_W < 700 ? 40 : 60);
     ctx.restore();
 
     // ─── DEFINICIÓN DE LAS TARJETAS ───
@@ -103,18 +115,14 @@
 
     // ─── DISPOSICIÓN DE LAS TARJETAS ───
     // Calcula la posición de las dos tarjetas centradas horizontalmente
-    const gap = 60;       // Espacio entre tarjetas
-    const cardW = 380;    // Ancho de cada tarjeta
-    const cardH = 260;    // Alto de cada tarjeta
-    const totalW = cardW * 2 + gap;
-    const startX = (LOGICAL_W - totalW) / 2;  // X inicial para centrar
-    const cardY = 100;    // Posición Y fija de las tarjetas
+    const { compact, gap, cardW, cardH, startX, cardY } = getCardLayout();
 
     // ─── DIBUJAR CADA TARJETA ───
     for (let i = 0; i < cards.length; i++) {
-      const cx = startX + i * (cardW + gap);
+      const cx = compact ? startX : startX + i * (cardW + gap);
+      const cy = compact ? cardY + i * (cardH + gap) : cardY;
       // Detecta si el mouse está sobre esta tarjeta
-      const hover = mouse.x > cx && mouse.x < cx + cardW && mouse.y > cardY && mouse.y < cardY + cardH;
+      const hover = mouse.x > cx && mouse.x < cx + cardW && mouse.y > cy && mouse.y < cy + cardH;
       const selected = cards[i].id === _hovered;
       if (hover) _hovered = cards[i].id;
 
@@ -125,18 +133,19 @@
       // ─── Fondo de la tarjeta ───
       ctx.fillStyle = '#1a1a1a';
       ctx.beginPath();
-      ctx.roundRect(cx, cardY - lift, cardW, cardH, 8);
+      ctx.roundRect(cx, cy - lift, cardW, cardH, 8);
       ctx.fill();
 
       // ─── Borde de la tarjeta ───
       ctx.strokeStyle = borderColor;
       ctx.lineWidth = selected ? 2.5 : 2;
       ctx.beginPath();
-      ctx.roundRect(cx, cardY - lift, cardW, cardH, 8);
+      ctx.roundRect(cx, cy - lift, cardW, cardH, 8);
       ctx.stroke();
 
       // ─── Miniatura del mapa (thumbnail) con recorte ───
-      const thumbX = cx + 20, thumbY = cardY + 20 - lift, thumbW = 340, thumbH = 150;
+      const thumbX = cx + (compact ? 10 : 20), thumbY = cy + (compact ? 10 : 20) - lift;
+      const thumbW = cardW - (compact ? 20 : 40), thumbH = compact ? 82 : 150;
       ctx.save();
       ctx.beginPath(); ctx.roundRect(thumbX, thumbY, thumbW, thumbH, 4); ctx.clip();
       cards[i].drawThumb(thumbX, thumbY, thumbW, thumbH);
@@ -147,15 +156,15 @@
       // ─── Nombre del mapa ───
       ctx.textAlign = 'left';
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 20px monospace';
-      ctx.fillText(cards[i].name, cx + 12, cardY + 200 - lift);
+      ctx.font = 'bold ' + (compact ? 15 : 20) + 'px monospace';
+      ctx.fillText(cards[i].name, cx + 12, cy + (compact ? 112 : 200) - lift);
 
       // ─── Descripción del mapa (soporta múltiples líneas con \n) ───
       ctx.fillStyle = '#aaaaaa';
-      ctx.font = 'italic 13px monospace';
+      ctx.font = 'italic ' + (compact ? 10 : 13) + 'px monospace';
       const lines = cards[i].desc.split('\n');
       for (let li = 0; li < lines.length; li++) {
-        ctx.fillText(lines[li], cx + 12, cardY + 224 - lift + li * 16);
+        ctx.fillText(lines[li], cx + 12, cy + (compact ? 132 : 224) - lift + li * (compact ? 12 : 16));
       }
 
       // ─── Marca de verificación si está seleccionado ───
@@ -163,15 +172,15 @@
         ctx.fillStyle = '#ffb833';
         ctx.font = 'bold 22px monospace';
         ctx.textAlign = 'right';
-        ctx.fillText('\u2713', cx + cardW - 12, cardY + 32 - lift);
+        ctx.fillText('\u2713', cx + cardW - 12, cy + 32 - lift);
       }
     }
 
     // ─── Texto de ayuda en la parte inferior ───
     ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '14px monospace';
-    ctx.fillText('Click to select   |   ENTER to confirm   |   1 / 2 keys', LOGICAL_W/2, LOGICAL_H - 20);
+    ctx.font = (LOGICAL_W < 700 ? 10 : 14) + 'px monospace';
+    ctx.fillText(showTouchControls ? 'TOCA UN MAPA PARA JUGAR' : 'Click to select   |   ENTER to confirm   |   1 / 2 keys', LOGICAL_W/2, LOGICAL_H - 12);
 
   }
 
@@ -179,10 +188,7 @@
   // Procesa teclas (1, 2, ENTER) y clics del mouse para elegir y confirmar mapa
   function handleMapSelectInput(dt) {
     // Recalcula la posición de las tarjetas (misma lógica que en drawMapSelectScreen)
-    const gap = 60, cardW = 380, cardH = 260;
-    const totalW = cardW * 2 + gap;
-    const startX = (LOGICAL_W - totalW) / 2;
-    const cardY = 100;
+    const { compact, gap, cardW, cardH, startX, cardY } = getCardLayout();
 
     // ─── SELECCIÓN CON TECLADO (teclas 1 y 2) ───
     if (keys['Digit1']) { _hovered = 1; keys['Digit1'] = false; }
@@ -192,8 +198,9 @@
     // Detecta clic dentro de cada tarjeta y actualiza _hovered
     if ((mouse.down || pointerPressed) && !gs._clickBuf) {
       for (let i = 0; i < 2; i++) {
-        const cx = startX + i * (cardW + gap);
-        if (mouse.x > cx && mouse.x < cx + cardW && mouse.y > cardY && mouse.y < cardY + cardH) {
+        const cx = compact ? startX : startX + i * (cardW + gap);
+        const cy = compact ? cardY + i * (cardH + gap) : cardY;
+        if (mouse.x > cx && mouse.x < cx + cardW && mouse.y > cy && mouse.y < cy + cardH) {
           _selectedMap = i + 1;
           _mapConfirmed = true;
           gs._clickBuf = true;
@@ -252,15 +259,12 @@
   const _origLoop = loop;
   // Mientras el estado sea 'mapSelect', dibuja la pantalla y procesa input
   loop = function myLoop(timestamp) {
-    const _portraitBlock = showTouchControls && window.innerWidth < window.innerHeight && window.innerWidth < 768;
     if (gs && gs.state === 'mapSelect') {
       requestAnimationFrame(myLoop);
       const dt = Math.min((timestamp - (_lastTs || timestamp)) / 1000, 0.05);
       _lastTs = timestamp;
       ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
       if (!gs) gs = createGameState();
-      if (_portraitBlock) { drawOrientationOverlay(); pointerPressed = false; return; }
-      if (typeof updateGamepad === 'function') updateGamepad();
       drawMapSelectScreen();
       handleMapSelectInput(dt);
       if (!mouse.down && !pointerPressed && gs) gs._clickBuf = false;
