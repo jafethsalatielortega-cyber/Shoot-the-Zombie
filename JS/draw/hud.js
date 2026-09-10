@@ -2,78 +2,9 @@
 // Muestra toda la información en pantalla: vida, puntuación, oleada, munición, armas, granadas, power-ups, etc.
 // Recibe el estado global del juego (gs) para acceder a todos los datos del jugador y la partida
 // Esta función se dibuja en coordenadas de pantalla fijas (no afectadas por la cámara)
-function drawCompactHUD(gs) {
-  const p = gs.player;
-  const w = p.weapon;
-  const alive = gs.zombies.filter(z => !z.dead).length;
-  const remaining = alive + gs.zombiesToSpawn.length + (gs.boss && !gs.boss.dead ? 1 : 0);
-  const hpRatio = Math.max(0, p.hp / 100);
-  const staminaRatio = Math.max(0, p.stamina / p.maxStamina);
-  ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.62)'; ctx.fillRect(4, 5, LOGICAL_W - 8, 58);
-  ctx.fillStyle = '#222'; ctx.fillRect(10, 12, 76, 10);
-  ctx.fillStyle = p.hp > 50 ? '#30e030' : p.hp > 25 ? '#e09020' : '#e03030';
-  ctx.fillRect(11, 13, 74 * hpRatio, 8);
-  ctx.strokeStyle = '#666'; ctx.strokeRect(10, 12, 76, 10);
-  ctx.fillStyle = '#222'; ctx.fillRect(10, 28, 76, 7);
-  ctx.fillStyle = staminaRatio > .25 ? '#30c0e0' : '#e03030';
-  ctx.fillRect(11, 29, 74 * staminaRatio, 5);
-
-  ctx.textAlign = 'center';
-  ctx.fillStyle = gs.wave >= 10 && Date.now() % 500 < 250 ? '#ff2020' : '#ffb833';
-  ctx.font = 'bold 13px monospace'; ctx.fillText('W' + gs.wave, LOGICAL_W / 2, 20);
-  ctx.fillStyle = '#fff'; ctx.font = '10px monospace'; ctx.fillText('\u2620 ' + remaining, LOGICAL_W / 2, 34);
-  ctx.fillStyle = '#00ff88'; ctx.fillText(String(gs.score).padStart(6, '0'), LOGICAL_W / 2, 50);
-
-  ctx.textAlign = 'right'; ctx.fillStyle = p.ammo <= 3 ? '#ff5533' : '#fff';
-  ctx.font = 'bold 12px monospace';
-  ctx.fillText(w.isMelee ? '---' : (p.reloading ? 'RLD…' : p.ammo + '/' + p.totalAmmo), LOGICAL_W - 48, 20);
-  ctx.fillStyle = '#aaa'; ctx.font = '9px monospace';
-  ctx.fillText(w.name.length > 13 ? w.name.slice(0, 12) + '…' : w.name, LOGICAL_W - 48, 34);
-
-  ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(0,0,0,0.48)'; ctx.fillRect(8, 70, 112, 47);
-  const names = [WEAPONS[p.slotWeaponIndices[0]].name, WEAPONS[p.slotWeaponIndices[1]].name];
-  for (let i = 0; i < 2; i++) {
-    ctx.fillStyle = p.weaponIndex === i ? '#ffb833' : '#777';
-    ctx.font = (p.weaponIndex === i ? 'bold ' : '') + '9px monospace';
-    ctx.fillText((p.weaponIndex === i ? '▶ ' : '  ') + names[i].slice(0, 13), 13, 84 + i * 13);
-  }
-  ctx.fillStyle = p.grenadeCooldown <= 0 ? '#ff9933' : '#666';
-  ctx.fillText('GREN ' + (p.grenadeCooldown <= 0 ? 'READY' : Math.ceil(p.grenadeCooldown) + 's'), 13, 111);
-
-  if (gs.boss && !gs.boss.dead) {
-    const bossW = Math.min(190, LOGICAL_W - 80), x = (LOGICAL_W - bossW) / 2, y = 72;
-    ctx.fillStyle = '#400'; ctx.fillRect(x, y, bossW, 10);
-    ctx.fillStyle = '#f30'; ctx.fillRect(x, y, bossW * Math.max(0, gs.boss.hp / gs.boss.maxHp), 10);
-    ctx.strokeStyle = '#f80'; ctx.strokeRect(x, y, bossW, 10);
-  }
-
-  const active = [];
-  if (p.instaKillTimer > 0) active.push(['INSTA ' + Math.ceil(p.instaKillTimer) + 's', '#ff44ff']);
-  if (p.doubleShotTimer > 0) active.push(['2X ' + Math.ceil(p.doubleShotTimer) + 's', '#ff9933']);
-  if (p.unlimitedAmmoTimer > 0) active.push(['AMMO∞ ' + Math.ceil(p.unlimitedAmmoTimer) + 's', '#00ccff']);
-  ctx.textAlign = 'center'; ctx.font = 'bold 9px monospace';
-  active.forEach((item, i) => { ctx.fillStyle = item[1]; ctx.fillText(item[0], LOGICAL_W / 2, 96 + i * 12); });
-
-  if (gs.damageFlash > 0) {
-    ctx.fillStyle = 'rgba(200,0,0,' + (gs.damageFlash * 0.35) + ')'; ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
-  }
-
-  const pauseBtn = { x: LOGICAL_W - 38, y: 9, w: 30, h: 28 };
-  ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-  ctx.beginPath(); ctx.roundRect(pauseBtn.x, pauseBtn.y, pauseBtn.w, pauseBtn.h, 5); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#fff'; ctx.fillRect(pauseBtn.x + 9, pauseBtn.y + 7, 3, 14); ctx.fillRect(pauseBtn.x + 18, pauseBtn.y + 7, 3, 14);
-  gs._pauseBtn = pauseBtn;
-  ctx.restore();
-}
-
 function drawHUD(gs) {
   // Obtiene la referencia al jugador desde el estado global del juego
   const p = gs.player;
-  if (showTouchControls && LOGICAL_W < 600) {
-    drawCompactHUD(gs);
-    return;
-  }
   // Guarda el estado actual del contexto de dibujo para restaurarlo después
   ctx.save();
 

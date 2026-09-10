@@ -78,21 +78,20 @@ function drawTitleScreen() {
   ctx.shadowBlur = 20;
   // "SHOOT THE" en rojo oscuro (fuente grande)
   ctx.fillStyle = '#cc0000';
-  const compact = LOGICAL_W < 600;
-  ctx.font = 'bold ' + (compact ? 40 : 78) + 'px monospace';
+  ctx.font = 'bold 78px monospace';
   ctx.letterSpacing = '6px';
-  ctx.fillText('SHOOT THE', LOGICAL_W/2, compact ? 105 : 130);
+  ctx.fillText('SHOOT THE', LOGICAL_W/2, 130);
   // "ZOMBIE" en rojo brillante (fuente aún más grande)
   ctx.fillStyle = '#ff2020';
-  ctx.font = 'bold ' + (compact ? 55 : 94) + 'px monospace';
-  ctx.fillText('ZOMBIE', LOGICAL_W/2, compact ? 170 : 220);
+  ctx.font = 'bold 94px monospace';
+  ctx.fillText('ZOMBIE', LOGICAL_W/2, 220);
   // Quita la sombra para los siguientes elementos
   ctx.shadowBlur = 0;
 
   // ─── SUBTÍTULO ───
   ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.font = 'italic ' + (compact ? 11 : 17) + 'px monospace';
-  ctx.fillText(compact ? 'Survive the horde. Save your ammo.' : 'Survive the horde. Don\'t run out of ammo.', LOGICAL_W/2, compact ? 202 : 260);
+  ctx.font = 'italic 17px monospace';
+  ctx.fillText('Survive the horde. Don\'t run out of ammo.', LOGICAL_W/2, 260);
 
   // ─── CONTROLES (ocultos en móvil) ───
   if (!showTouchControls) {
@@ -110,10 +109,9 @@ function drawTitleScreen() {
   }
 
   // ─── BOTONES "JUGAR" y "OPCIONES" (lado a lado) ───
-  const btnW = compact ? Math.min(240, LOGICAL_W - 32) : 160;
-  const btnH = 48, btnGap = compact ? 12 : 14;
-  const btnY = compact ? 300 : (showTouchControls ? 370 : 420);
-  const totalW = compact ? btnW : btnW * 2 + btnGap;
+  const btnW = 160, btnH = 48, btnGap = 14;
+  const btnY = showTouchControls ? 370 : 440;
+  const totalW = btnW * 2 + btnGap;
   const startX = LOGICAL_W / 2 - totalW / 2;
 
   // JUGAR
@@ -130,8 +128,7 @@ function drawTitleScreen() {
   _titlePlayBtn = { x: jx, y: jy, w: btnW, h: btnH };
 
   // OPCIONES
-  const ox = compact ? startX : startX + btnW + btnGap;
-  const oy = compact ? btnY + btnH + btnGap : btnY;
+  const ox = startX + btnW + btnGap, oy = btnY;
   const hovO = mouse.x > ox && mouse.x < ox+btnW && mouse.y > oy && mouse.y < oy+btnH;
   ctx.fillStyle = hovO ? '#2a4a3a' : '#1a2a1a';
   ctx.beginPath(); ctx.roundRect(ox, oy, btnW, btnH, 6); ctx.fill();
@@ -168,7 +165,7 @@ function drawGameOverScreen(gs) {
   const offsets = [[-3,-2],[2,3],[-1,2],[3,-1]];
   for (const [ox,oy] of offsets) {
     ctx.fillStyle = '#600';        // Sombra rojo oscuro
-    ctx.font = 'bold ' + (LOGICAL_W < 600 ? 42 : 72) + 'px monospace';
+    ctx.font = 'bold 72px monospace';
     ctx.fillText('GAME OVER', LOGICAL_W/2+ox, 130+oy);
   }
   // Texto principal en rojo brillante
@@ -177,7 +174,7 @@ function drawGameOverScreen(gs) {
 
   // ─── ESTADÍSTICAS DE LA PARTIDA ───
   ctx.fillStyle = '#fff';
-  ctx.font = (LOGICAL_W < 600 ? 15 : 22) + 'px monospace';
+  ctx.font = '22px monospace';
   // Puntuación final (formateada a 6 dígitos)
   ctx.fillText('SCORE: ' + String(gs.score).padStart(6,'0'), LOGICAL_W/2, 200);
   // Oleadas sobrevividas
@@ -187,8 +184,7 @@ function drawGameOverScreen(gs) {
 
   // ─── BOTÓN "REINICIAR" ───
   // Define la posición y tamaño del botón de reinicio
-  const gameOverLayout = getGameOverButtonLayout();
-  const { bx, by, bw, bh, bx2, by2, bw2, bh2 } = gameOverLayout;
+  const bx = LOGICAL_W/2 - 140, by = 310, bw = 280, bh = 44;
   // Detecta si el mouse está sobre el botón (hover)
   const hoverR = mouse.x > bx && mouse.x < bx+bw && mouse.y > by && mouse.y < by+bh;
   // Color más claro si el mouse está encima
@@ -202,6 +198,7 @@ function drawGameOverScreen(gs) {
 
   // ─── BOTÓN "MENÚ PRINCIPAL" ───
   // Define la posición y tamaño del botón de menú principal
+  const bx2 = LOGICAL_W/2 - 140, by2 = by + 58, bw2 = 280, bh2 = 44;
   // Detecta hover para este botón
   const hoverM = mouse.x > bx2 && mouse.x < bx2+bw2 && mouse.y > by2 && mouse.y < by2+bh2;
   // Color azul que se aclara al pasar el mouse
@@ -215,14 +212,6 @@ function drawGameOverScreen(gs) {
 
   // Restablece la alineación del texto a la izquierda
   ctx.textAlign = 'left';
-}
-
-function getGameOverButtonLayout() {
-  const bw = Math.min(280, LOGICAL_W - 32);
-  const bh = 44;
-  const bx = (LOGICAL_W - bw) / 2;
-  const by = 310;
-  return { bx, by, bw, bh, bx2: bx, by2: by + 58, bw2: bw, bh2: bh };
 }
 
 // ─── CARTEL DE OLEADA COMPLETADA ───
@@ -244,7 +233,7 @@ function drawWaveCompleteBanner(gs) {
   ctx.scale(sc, sc);
 
   // Fondo del banner (rectángulo oscuro)
-  const bw = Math.min(500, LOGICAL_W - 24), bh = 200;
+  const bw = 500, bh = 200;
   ctx.fillStyle = '#0d0d0d';
   ctx.fillRect(-bw/2, -bh/2, bw, bh);
   // Borde del banner en color naranja
@@ -257,7 +246,7 @@ function drawWaveCompleteBanner(gs) {
   // Sombra del texto (desplazada para efecto 3D)
   ctx.shadowColor = 'rgba(255,184,51,0.3)';
   ctx.shadowBlur = 0;
-  ctx.font = 'bold ' + (LOGICAL_W < 600 ? 25 : 52) + 'px monospace';
+  ctx.font = 'bold 52px monospace';
   ctx.fillStyle = 'rgba(255,184,51,0.3)';
   ctx.fillText('WAVE ' + (gs.wave) + ' COMPLETE', 2, -45);
   // Texto principal en naranja
@@ -267,9 +256,8 @@ function drawWaveCompleteBanner(gs) {
 
   // Mensaje descriptivo de la oleada (varía según el número de oleada)
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'italic ' + (LOGICAL_W < 600 ? 11 : 18) + 'px monospace';
-  const waveMessage = getWaveMessage(gs.wave);
-  ctx.fillText(LOGICAL_W < 600 && waveMessage.length > 38 ? waveMessage.slice(0, 36) + '…' : waveMessage, 0, 10);
+  ctx.font = 'italic 18px monospace';
+  ctx.fillText(getWaveMessage(gs.wave), 0, 10);
 
   // Tiempo restante para la siguiente oleada
   ctx.fillStyle = '#aaaaaa';
@@ -297,7 +285,7 @@ function drawWaveAnnouncement(gs) {
   ctx.textAlign = 'center';
   // Muestra "WAVE X" en rojo con fuente grande
   ctx.fillStyle = '#cc0000';
-  ctx.font = 'bold ' + (LOGICAL_W < 600 ? 42 : 64) + 'px monospace';
+  ctx.font = 'bold 64px monospace';
   ctx.fillText('WAVE ' + gs.waveAnnouncement.wave, LOGICAL_W / 2, 100);
   ctx.restore();
   ctx.textAlign = 'left';
@@ -328,13 +316,13 @@ function drawBossAnnouncement(gs) {
   ctx.shadowColor = '#ff0000';
   ctx.shadowBlur = 20;
   ctx.fillStyle = '#ff0000';
-  ctx.font = 'bold ' + (LOGICAL_W < 600 ? 25 : 36) + 'px monospace';
+  ctx.font = 'bold 36px monospace';
   ctx.fillText('\u26A0 BOSS WAVE \u26A0', LOGICAL_W / 2, 82);
 
   // Quita la sombra para el mensaje secundario
   ctx.shadowBlur = 0;
   ctx.fillStyle = '#ffcccc';
-  ctx.font = 'italic ' + (LOGICAL_W < 600 ? 12 : 18) + 'px monospace';
+  ctx.font = 'italic 18px monospace';
   ctx.fillText('A giant has risen. Survive.', LOGICAL_W / 2, 112);
 
   ctx.restore();
@@ -356,11 +344,11 @@ function drawPauseOverlay(gs) {
   ctx.shadowColor = '#000';
   ctx.shadowBlur = 20;
   ctx.fillStyle = '#ffb833';
-  ctx.font = 'bold ' + (LOGICAL_W < 600 ? 40 : 52) + 'px monospace';
+  ctx.font = 'bold 52px monospace';
   ctx.fillText('PAUSED', LOGICAL_W / 2, 110);
   ctx.shadowBlur = 0;
 
-  const bw = Math.min(280, LOGICAL_W - 24), bh = 44;
+  const bw = 280, bh = 44;
   const bx = LOGICAL_W / 2 - bw / 2;
   const optionsOpen = gs._pauseOptionsOpen === true;
 
@@ -483,7 +471,7 @@ function drawTitleOptions() {
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
   ctx.textAlign = 'center';
 
-  const pw = Math.min(280, LOGICAL_W - 24), ph = 200;
+  const pw = 280, ph = 200;
   const px = LOGICAL_W / 2 - pw / 2, py = LOGICAL_H / 2 - ph / 2 - 20;
   ctx.fillStyle = '#1a1a1a';
   ctx.beginPath(); ctx.roundRect(px, py, pw, ph, 10); ctx.fill();

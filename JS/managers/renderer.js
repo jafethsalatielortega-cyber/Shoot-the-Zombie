@@ -145,26 +145,22 @@ function renderGame(gs) {
   // ─── ELEMENTOS DE UI (no afectados por cámara) ───
   // Estos elementos se dibujan en coordenadas de pantalla fijas
   drawFloatTexts(gs.camX);                                 // Textos flotantes (daño, power-ups, puntos)
+  drawHUD(gs);                                             // Interfaz de usuario: barra de vida, puntuación, munición, etc.
 
-  // ─── FONDOS DE LEGIBILIDAD TÁCTIL ───
+  // ─── [NEW] TOUCH HUD ADJUSTMENTS ───
   // En dispositivos táctiles añade barras semi-transparentes para
   // mejorar la legibilidad del HUD y los botones virtuales sobre
   // fondos claros del mapa.
   if (showTouchControls && gs.state === 'playing') {
     ctx.save();
-    // Degradado inferior detrás de los controles sin tapar el escenario.
-    const touchShade = ctx.createLinearGradient(0, LOGICAL_H - 190, 0, LOGICAL_H);
-    touchShade.addColorStop(0, 'rgba(0,0,0,0)');
-    touchShade.addColorStop(1, 'rgba(0,0,0,0.52)');
-    ctx.fillStyle = touchShade;
-    ctx.fillRect(0, LOGICAL_H - 190, LOGICAL_W, 190);
+    // Banda oscura inferior para botones virtuales
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(0, LOGICAL_H - 40, LOGICAL_W, 40);
     // Banda oscura superior para textos del HUD
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fillRect(0, 0, LOGICAL_W, 36);
     ctx.restore();
   }
-
-  drawHUD(gs);                                             // Interfaz sobre los fondos de legibilidad
 
   // ─── [NEW] VIRTUAL GAMEPAD ───
   // Gamepad táctil que se dibuja solo en dispositivos táctiles.
@@ -196,7 +192,7 @@ function drawTouchGamepad(gs) {
   ctx.fillStyle = 'rgba(255,255,255,0.4)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('MOVE', JOYSTICK_CENTER_X, Math.min(LOGICAL_H - 5, JOYSTICK_CENTER_Y + JOYSTICK_OUTER_R + 13));
+  ctx.fillText('MOVE', JOYSTICK_CENTER_X, 472);
 
   // ─── BOTÓN SHOOT ───
   ctx.beginPath();
@@ -306,7 +302,7 @@ function drawTouchGamepad(gs) {
 
   // ─── INDICADOR DE PUNTERÍA TÁCTIL ───
   // Pequeña cruceta que muestra hacia dónde apunta el jugador con el toque
-  if (aimPointer >= 0 && showTouchControls) {
+  if (aimPointer >= 0 && !showTouchControls) {
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 1;
     // Línea horizontal
@@ -325,9 +321,25 @@ function drawTouchGamepad(gs) {
   ctx.restore();
 }
 
-// Compatibilidad con llamadas antiguas: ya no bloquea el juego en vertical.
+// ─── [NEW] ORIENTATION OVERLAY ───
+// Muestra un mensaje de "gira el dispositivo" cuando el teléfono
+// está en orientación vertical en pantallas pequeñas (< 768px de ancho).
+// En tablets (≥768px) el modo retrato es aceptable y no se muestra.
 function drawOrientationOverlay() {
-  return;
+  if (!showTouchControls) return;
+  if (window.innerWidth >= window.innerHeight) return;
+  if (window.innerWidth >= 768) return;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,1)';
+  ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 32px monospace';
+  ctx.fillText('TOUCH TO START', LOGICAL_W / 2, 200);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '16px monospace';
+  ctx.fillText('Landscape mode required', LOGICAL_W / 2, 240);
+  ctx.restore();
 }
 
 // ─── DIBUJAR SUPERPOSICIONES DE TRANSICIÓN ───

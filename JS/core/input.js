@@ -9,22 +9,19 @@ const keys = {};
 let mouse = {x: LOGICAL_W/2, y: LOGICAL_H/2, down: false};
 
 // ─── [NEW] DEVICE DETECTION ───
-let isTouchDevice = hasTouchInput();
+let isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 let isSmallScreen = window.innerWidth <= 900 || window.innerHeight <= 600;
-let showTouchControls = shouldUseTouchLayout();
+let showTouchControls = isTouchDevice || isSmallScreen;
 function updateDeviceFlags() {
-  isTouchDevice = hasTouchInput();
+  isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   isSmallScreen = window.innerWidth <= 900 || window.innerHeight <= 600;
-  // Una ventana pequeña con mouse/teclado no debe recibir controles táctiles.
-  showTouchControls = shouldUseTouchLayout();
-  document.body.classList.toggle('touch-mode', showTouchControls);
+  showTouchControls = isTouchDevice || isSmallScreen;
 }
 
 // ─── [NEW] TOUCH CONTROLS STATE ───
 let pointerPressed = false;                   // True por 1 frame al tocar la pantalla
 let touchShooting = false;                    // True mientras se toca el botón FIRE
-let mouseButtonDown = false;
-let sprintToggled = false;                    // Se conserva por compatibilidad con partidas guardadas
+let sprintToggled = false;                    // Sprint toggle (true = corriendo)
 const pendingKeyRelease = [];                 // Teclas momentáneas (Q=arma, R=recarga) a liberar en 1 frame
 // Estado del joystick virtual
 let joystickActive = false;
@@ -44,15 +41,7 @@ let aimY = LOGICAL_H / 2;
 function clearKeys() {
   for (const k in keys) keys[k] = false;
   touchShooting = false;
-  mouseButtonDown = false;
-  mouse.down = false;
   sprintToggled = false;
-  joystickActive = false;
-  joystickPointer = -1;
-  aimPointer = -1;
-  joystickKnobX = 0;
-  joystickKnobY = 0;
-  for (const id in touches) delete touches[id];
 }
 
 // ─── [NEW] MOMENTARY KEY HELPERS ───
@@ -81,19 +70,17 @@ document.addEventListener('keyup', e => { keys[e.code] = false; });
 // de pantalla a coordenadas del canvas dividiendo por el factor de escala.
 document.addEventListener('mousemove', e => {
   const rect = canvas.getBoundingClientRect();
-  mouse.x = (e.clientX - rect.left) * LOGICAL_W / rect.width;
-  mouse.y = (e.clientY - rect.top) * LOGICAL_H / rect.height;
+  mouse.x = (e.clientX - rect.left) / scale;
+  mouse.y = (e.clientY - rect.top)  / scale;
 });
 // Al hacer clic en el canvas: marca el botón como presionado, solicita pantalla completa e inicializa el audio si es necesario
 canvas.addEventListener('mousedown', e => {
-  if (e.button !== 0) return;
-  mouseButtonDown = true;
   mouse.down = true;
   requestFullscreenAndLock();
   if (!audioInit) initAudio();
 });
 // Al soltar el clic: marca el botón como no presionado
-window.addEventListener('mouseup', () => { mouseButtonDown = false; mouse.down = touchShooting; });
+canvas.addEventListener('mouseup', () => { mouse.down = false; });
 // Previene que aparezca el menú contextual del navegador al hacer clic derecho
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -125,52 +112,21 @@ document.addEventListener('keyup', e => {
 // Valores por defecto (se pueden personalizar desde el menú de opciones)
 let JOYSTICK_CENTER_X = 110;
 let JOYSTICK_CENTER_Y = 390;
-let JOYSTICK_OUTER_R = 64;
-let JOYSTICK_CLAMP = 48;
-let BTN_SHOOT_X = 1100, BTN_SHOOT_Y = 390, BTN_SHOOT_R = 42;
-let BTN_JUMP_X = 1100, BTN_JUMP_Y = 295, BTN_JUMP_R = 34;
-let BTN_SPRINT_X = 1010, BTN_SPRINT_Y = 390, BTN_SPRINT_R = 28;
-let BTN_SWITCH_X = 1200, BTN_SWITCH_Y = 390, BTN_SWITCH_R = 28;
-let BTN_RELOAD_X = 1100, BTN_RELOAD_Y = 440, BTN_RELOAD_R = 25;
-let BTN_KNIFE_X = 1200, BTN_KNIFE_Y = 295, BTN_KNIFE_R = 27;
-let BTN_GRENADE_X = 940, BTN_GRENADE_Y = 340, BTN_GRENADE_R = 26;
-let BTN_BOARD_X = 1010, BTN_BOARD_Y = 440, BTN_BOARD_R = 26;
-let AIM_ZONE_X1 = 0, AIM_ZONE_X2 = LOGICAL_W;
-let touchLayoutCustomized = false;
-
-function applyDefaultTouchLayout() {
-  const portrait = LOGICAL_W < 600;
-  if (portrait) {
-    JOYSTICK_CENTER_X = 68; JOYSTICK_CENTER_Y = 390;
-    JOYSTICK_OUTER_R = 56; JOYSTICK_CLAMP = 42;
-    BTN_SHOOT_X = LOGICAL_W - 48; BTN_SHOOT_Y = 366; BTN_SHOOT_R = 38;
-    BTN_JUMP_X = LOGICAL_W - 48; BTN_JUMP_Y = 268; BTN_JUMP_R = 32;
-    BTN_SPRINT_X = 68; BTN_SPRINT_Y = 294; BTN_SPRINT_R = 25;
-    BTN_SWITCH_X = LOGICAL_W - 112; BTN_SWITCH_Y = 438; BTN_SWITCH_R = 24;
-    BTN_RELOAD_X = LOGICAL_W - 48; BTN_RELOAD_Y = 452; BTN_RELOAD_R = 22;
-    BTN_KNIFE_X = LOGICAL_W - 112; BTN_KNIFE_Y = 286; BTN_KNIFE_R = 25;
-    BTN_GRENADE_X = LOGICAL_W - 112; BTN_GRENADE_Y = 362; BTN_GRENADE_R = 25;
-    BTN_BOARD_X = LOGICAL_W - 112; BTN_BOARD_Y = 218; BTN_BOARD_R = 23;
-  } else {
-    JOYSTICK_CENTER_X = Math.max(88, LOGICAL_W * 0.09); JOYSTICK_CENTER_Y = LOGICAL_H - 86;
-    JOYSTICK_OUTER_R = 64; JOYSTICK_CLAMP = 48;
-    BTN_SHOOT_X = LOGICAL_W - 100; BTN_SHOOT_Y = LOGICAL_H - 88; BTN_SHOOT_R = 42;
-    BTN_JUMP_X = LOGICAL_W - 100; BTN_JUMP_Y = LOGICAL_H - 180; BTN_JUMP_R = 34;
-    BTN_SPRINT_X = JOYSTICK_CENTER_X + 100; BTN_SPRINT_Y = LOGICAL_H - 68; BTN_SPRINT_R = 28;
-    BTN_SWITCH_X = LOGICAL_W - 30; BTN_SWITCH_Y = LOGICAL_H - 85; BTN_SWITCH_R = 27;
-    BTN_RELOAD_X = LOGICAL_W - 185; BTN_RELOAD_Y = LOGICAL_H - 55; BTN_RELOAD_R = 24;
-    BTN_KNIFE_X = LOGICAL_W - 30; BTN_KNIFE_Y = LOGICAL_H - 180; BTN_KNIFE_R = 27;
-    BTN_GRENADE_X = LOGICAL_W - 190; BTN_GRENADE_Y = LOGICAL_H - 142; BTN_GRENADE_R = 26;
-    BTN_BOARD_X = LOGICAL_W - 260; BTN_BOARD_Y = LOGICAL_H - 55; BTN_BOARD_R = 25;
-  }
-  AIM_ZONE_X1 = 0;
-  AIM_ZONE_X2 = LOGICAL_W;
-}
+let JOYSTICK_OUTER_R = 80;
+let JOYSTICK_CLAMP = 65;
+let BTN_SHOOT_X = 1100, BTN_SHOOT_Y = 390, BTN_SHOOT_R = 46;
+let BTN_JUMP_X = 1100, BTN_JUMP_Y = 295, BTN_JUMP_R = 38;
+let BTN_SPRINT_X = 1010, BTN_SPRINT_Y = 390, BTN_SPRINT_R = 32;
+let BTN_SWITCH_X = 1200, BTN_SWITCH_Y = 390, BTN_SWITCH_R = 32;
+let BTN_RELOAD_X = 1100, BTN_RELOAD_Y = 465, BTN_RELOAD_R = 30;
+let BTN_KNIFE_X = 1200, BTN_KNIFE_Y = 295, BTN_KNIFE_R = 30;
+let BTN_GRENADE_X = 940, BTN_GRENADE_Y = 340, BTN_GRENADE_R = 28;
+let BTN_BOARD_X = 1010, BTN_BOARD_Y = 465, BTN_BOARD_R = 30;
+let AIM_ZONE_X1 = 200, AIM_ZONE_X2 = 1050;
 
 // ─── [NEW] TOUCH LAYOUT PERSISTENCE ───
 function saveTouchLayout() {
   try { localStorage.setItem('zombies_touch_layout', JSON.stringify({
-    version: 2, viewportWidth: LOGICAL_W,
     JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y, JOYSTICK_OUTER_R, JOYSTICK_CLAMP,
     BTN_SHOOT_X, BTN_SHOOT_Y, BTN_SHOOT_R,
     BTN_JUMP_X, BTN_JUMP_Y, BTN_JUMP_R,
@@ -186,55 +142,57 @@ function saveTouchLayout() {
 function loadTouchLayout() {
   try {
     const s = localStorage.getItem('zombies_touch_layout');
-    if (!s) { applyDefaultTouchLayout(); return; }
+    if (!s) return;
     const d = JSON.parse(s);
-    // Los layouts antiguos eran absolutos para 1280px y no funcionaban al rotar.
-    if (d.version !== 2 || !d.viewportWidth) { applyDefaultTouchLayout(); return; }
-    const ratioX = LOGICAL_W / d.viewportWidth;
-    if (d.JOYSTICK_CENTER_X !== undefined) JOYSTICK_CENTER_X = d.JOYSTICK_CENTER_X * ratioX;
+    if (d.JOYSTICK_CENTER_X !== undefined) JOYSTICK_CENTER_X = d.JOYSTICK_CENTER_X;
     if (d.JOYSTICK_CENTER_Y !== undefined) JOYSTICK_CENTER_Y = d.JOYSTICK_CENTER_Y;
     if (d.JOYSTICK_OUTER_R !== undefined) JOYSTICK_OUTER_R = d.JOYSTICK_OUTER_R;
     if (d.JOYSTICK_CLAMP !== undefined) JOYSTICK_CLAMP = d.JOYSTICK_CLAMP;
-    if (d.BTN_SHOOT_X !== undefined) BTN_SHOOT_X = d.BTN_SHOOT_X * ratioX;
+    if (d.BTN_SHOOT_X !== undefined) BTN_SHOOT_X = d.BTN_SHOOT_X;
     if (d.BTN_SHOOT_Y !== undefined) BTN_SHOOT_Y = d.BTN_SHOOT_Y;
     if (d.BTN_SHOOT_R !== undefined) BTN_SHOOT_R = d.BTN_SHOOT_R;
-    if (d.BTN_JUMP_X !== undefined) BTN_JUMP_X = d.BTN_JUMP_X * ratioX;
+    if (d.BTN_JUMP_X !== undefined) BTN_JUMP_X = d.BTN_JUMP_X;
     if (d.BTN_JUMP_Y !== undefined) BTN_JUMP_Y = d.BTN_JUMP_Y;
     if (d.BTN_JUMP_R !== undefined) BTN_JUMP_R = d.BTN_JUMP_R;
-    if (d.BTN_SPRINT_X !== undefined) BTN_SPRINT_X = d.BTN_SPRINT_X * ratioX;
+    if (d.BTN_SPRINT_X !== undefined) BTN_SPRINT_X = d.BTN_SPRINT_X;
     if (d.BTN_SPRINT_Y !== undefined) BTN_SPRINT_Y = d.BTN_SPRINT_Y;
     if (d.BTN_SPRINT_R !== undefined) BTN_SPRINT_R = d.BTN_SPRINT_R;
-    if (d.BTN_SWITCH_X !== undefined) BTN_SWITCH_X = d.BTN_SWITCH_X * ratioX;
+    if (d.BTN_SWITCH_X !== undefined) BTN_SWITCH_X = d.BTN_SWITCH_X;
     if (d.BTN_SWITCH_Y !== undefined) BTN_SWITCH_Y = d.BTN_SWITCH_Y;
     if (d.BTN_SWITCH_R !== undefined) BTN_SWITCH_R = d.BTN_SWITCH_R;
-    if (d.BTN_RELOAD_X !== undefined) BTN_RELOAD_X = d.BTN_RELOAD_X * ratioX;
+    if (d.BTN_RELOAD_X !== undefined) BTN_RELOAD_X = d.BTN_RELOAD_X;
     if (d.BTN_RELOAD_Y !== undefined) BTN_RELOAD_Y = d.BTN_RELOAD_Y;
     if (d.BTN_RELOAD_R !== undefined) BTN_RELOAD_R = d.BTN_RELOAD_R;
-    if (d.BTN_KNIFE_X !== undefined) BTN_KNIFE_X = d.BTN_KNIFE_X * ratioX;
+    if (d.BTN_KNIFE_X !== undefined) BTN_KNIFE_X = d.BTN_KNIFE_X;
     if (d.BTN_KNIFE_Y !== undefined) BTN_KNIFE_Y = d.BTN_KNIFE_Y;
     if (d.BTN_KNIFE_R !== undefined) BTN_KNIFE_R = d.BTN_KNIFE_R;
-    if (d.BTN_GRENADE_X !== undefined) BTN_GRENADE_X = d.BTN_GRENADE_X * ratioX;
+    if (d.BTN_GRENADE_X !== undefined) BTN_GRENADE_X = d.BTN_GRENADE_X;
     if (d.BTN_GRENADE_Y !== undefined) BTN_GRENADE_Y = d.BTN_GRENADE_Y;
     if (d.BTN_GRENADE_R !== undefined) BTN_GRENADE_R = d.BTN_GRENADE_R;
-    if (d.BTN_BOARD_X !== undefined) BTN_BOARD_X = d.BTN_BOARD_X * ratioX;
+    if (d.BTN_BOARD_X !== undefined) BTN_BOARD_X = d.BTN_BOARD_X;
     if (d.BTN_BOARD_Y !== undefined) BTN_BOARD_Y = d.BTN_BOARD_Y;
     if (d.BTN_BOARD_R !== undefined) BTN_BOARD_R = d.BTN_BOARD_R;
-    AIM_ZONE_X1 = 0; AIM_ZONE_X2 = LOGICAL_W;
-    touchLayoutCustomized = true;
-  } catch(e) { applyDefaultTouchLayout(); }
+    if (d.AIM_ZONE_X1 !== undefined) AIM_ZONE_X1 = d.AIM_ZONE_X1;
+    if (d.AIM_ZONE_X2 !== undefined) AIM_ZONE_X2 = d.AIM_ZONE_X2;
+  } catch(e) {}
 }
 function resetTouchLayout() {
-  touchLayoutCustomized = false;
-  applyDefaultTouchLayout();
+  JOYSTICK_CENTER_X = 110; JOYSTICK_CENTER_Y = 390; JOYSTICK_OUTER_R = 80; JOYSTICK_CLAMP = 65;
+  BTN_SHOOT_X = 1100; BTN_SHOOT_Y = 390; BTN_SHOOT_R = 46;
+  BTN_JUMP_X = 1100; BTN_JUMP_Y = 295; BTN_JUMP_R = 38;
+  BTN_SPRINT_X = 1010; BTN_SPRINT_Y = 390; BTN_SPRINT_R = 32;
+  BTN_SWITCH_X = 1200; BTN_SWITCH_Y = 390; BTN_SWITCH_R = 32;
+  BTN_RELOAD_X = 1100; BTN_RELOAD_Y = 465; BTN_RELOAD_R = 30;
+  BTN_KNIFE_X = 1200; BTN_KNIFE_Y = 295; BTN_KNIFE_R = 30;
+  BTN_GRENADE_X = 940; BTN_GRENADE_Y = 340; BTN_GRENADE_R = 28;
+  BTN_BOARD_X = 1010; BTN_BOARD_Y = 465; BTN_BOARD_R = 30;
+  AIM_ZONE_X1 = 200; AIM_ZONE_X2 = 1050;
   saveTouchLayout();
 }
 
 function getCanvasCoords(px, py) {
   const rect = canvas.getBoundingClientRect();
-  return {
-    x: (px - rect.left) * LOGICAL_W / rect.width,
-    y: (py - rect.top) * LOGICAL_H / rect.height
-  };
+  return { x: (px - rect.left) / scale, y: (py - rect.top) / scale };
 }
 
 function dist(x1, y1, x2, y2) {
@@ -248,7 +206,6 @@ function handlePointerDown(e) {
   const p = getCanvasCoords(e.clientX, e.clientY);
   const id = e.pointerId;
   touches[id] = { x: p.x, y: p.y, active: true };
-  try { canvas.setPointerCapture(id); } catch (_) {}
 
   requestFullscreenAndLock();
   if (!audioInit) initAudio();
@@ -259,23 +216,8 @@ function handlePointerDown(e) {
   mouse.x = p.x;
   mouse.y = p.y;
 
-  // En menús, un toque es sólo un clic; no debe activar controles de partida.
-  if (typeof gs === 'undefined' || !gs || gs.state !== 'playing' || gs.paused) return;
-
-  // Joystick flotante: acepta el pulgar en toda la zona inferior izquierda.
-  const joystickHit = dist(p.x, p.y, JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y) < JOYSTICK_OUTER_R + 16;
-  const floatingJoystickZone = p.x < LOGICAL_W * 0.43 && p.y > LOGICAL_H * 0.58;
-  const overActionButton = [
-    [BTN_SHOOT_X, BTN_SHOOT_Y, BTN_SHOOT_R], [BTN_JUMP_X, BTN_JUMP_Y, BTN_JUMP_R],
-    [BTN_SPRINT_X, BTN_SPRINT_Y, BTN_SPRINT_R], [BTN_SWITCH_X, BTN_SWITCH_Y, BTN_SWITCH_R],
-    [BTN_RELOAD_X, BTN_RELOAD_Y, BTN_RELOAD_R], [BTN_KNIFE_X, BTN_KNIFE_Y, BTN_KNIFE_R],
-    [BTN_GRENADE_X, BTN_GRENADE_Y, BTN_GRENADE_R], [BTN_BOARD_X, BTN_BOARD_Y, BTN_BOARD_R]
-  ].some(b => dist(p.x, p.y, b[0], b[1]) < b[2] + 12);
-  if (joystickPointer === -1 && !overActionButton && (joystickHit || floatingJoystickZone)) {
-    if (floatingJoystickZone && !joystickHit) {
-      JOYSTICK_CENTER_X = Math.max(JOYSTICK_OUTER_R, Math.min(LOGICAL_W * 0.4, p.x));
-      JOYSTICK_CENTER_Y = Math.max(LOGICAL_H * 0.55, Math.min(LOGICAL_H - JOYSTICK_OUTER_R, p.y));
-    }
+  // Joystick (zona izquierda)
+  if (dist(p.x, p.y, JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y) < JOYSTICK_OUTER_R + 10) {
     joystickPointer = id;
     joystickActive = true;
     const dx = p.x - JOYSTICK_CENTER_X;
@@ -301,10 +243,11 @@ function handlePointerDown(e) {
     return;
   }
 
-  // Botón SPRINT (mantener pulsado; admite movimiento simultáneo)
+  // Botón SPRINT (toggle)
   if (dist(p.x, p.y, BTN_SPRINT_X, BTN_SPRINT_Y) < BTN_SPRINT_R + 12) {
     touches[id]._btn = 'sprint';
-    keys['ShiftLeft'] = true;
+    sprintToggled = !sprintToggled;
+    keys['ShiftLeft'] = sprintToggled;
     return;
   }
 
@@ -395,6 +338,24 @@ function handlePointerUp(e) {
   const id = e.pointerId;
   const touch = touches[id];
 
+  if (touch) {
+    if (touch._btn === 'shoot') {
+      touchShooting = false;
+    }
+    if (touch._btn === 'jump') {
+      keys['Space'] = false;
+    }
+    if (touch._btn === 'knife') {
+      keys['KeyE'] = false;
+    }
+    if (touch._btn === 'board') {
+      keys['KeyT'] = false;
+    }
+    if (touch._btn === 'grenade') {
+      keys['KeyG'] = false;
+    }
+  }
+
   if (id === joystickPointer) {
     joystickActive = false;
     joystickPointer = -1;
@@ -409,9 +370,6 @@ function handlePointerUp(e) {
   }
 
   delete touches[id];
-  syncHeldTouchActions();
-  mouse.down = mouseButtonDown || touchShooting;
-  try { canvas.releasePointerCapture(id); } catch (_) {}
 }
 
 function handlePointerCancel(e) {
@@ -426,16 +384,6 @@ function updateJoystickKeys() {
     keys['KeyD'] = false;
   }
   // El salto SOLO con el botón JUMP, no con el joystick
-}
-
-function syncHeldTouchActions() {
-  const held = Object.values(touches).map(t => t._btn);
-  touchShooting = held.includes('shoot');
-  keys['Space'] = held.includes('jump');
-  keys['ShiftLeft'] = held.includes('sprint');
-  keys['KeyE'] = held.includes('knife');
-  keys['KeyG'] = held.includes('grenade');
-  keys['KeyT'] = held.includes('board');
 }
 
 // ─── [NEW] GAMEPAD API (DUALSENSE / XBOX) ───
@@ -488,9 +436,11 @@ function updateGamepad() {
   now['KeyR']      = !!(btns[2]?.pressed);
   now['KeyQ']      = !!(btns[3]?.pressed);
   now['ShiftLeft'] = !!(btns[4]?.pressed);
+  now['KeyG']      = !!(btns[5]?.pressed);
+  now['KeyT']      = !!(btns[6]?.pressed);
   const r2val = btns[7]?.value || 0;
   now['_mouseDown'] = btns[7]?.pressed || r2val > 0.3;
-  now['Escape'] = !!(btns[9]?.pressed);
+  now['KeyP']      = !!(btns[9]?.pressed);
 
   now['ArrowLeft']  = !!(btns[14]?.pressed);
   now['ArrowRight'] = !!(btns[15]?.pressed);
@@ -508,26 +458,146 @@ function updateGamepad() {
     if (now[k] === undefined || !now[k]) keys[k] = false;
   }
   _gpPrevKeys = now;
+
+  // ─── NAVEGACIÓN EN MENÚS CON GAMEPAD ───
+  handleGamepadMenu(now, prev);
+}
+
+// ─── NAVEGACIÓN EN MENÚS CON GAMEPAD ───
+// Variables de estado para el focus en menús
+let _gpMenuState = '';
+let _gpMenuFocus = 0;
+
+function handleGamepadMenu(now, prev) {
+  // Solo funciona si gs está definido
+  if (typeof gs === 'undefined' || !gs) return;
+
+  // ─── SELECCIÓN DE MAPA ───
+  if (gs.state === 'mapSelect') {
+    const gap = 60, cardW = 380, cardH = 260;
+    const startX = (LOGICAL_W - cardW * 2 - gap) / 2;
+    const cardY = 100;
+    if (now['ArrowLeft'] && !prev['ArrowLeft']) {
+      keys['Digit1'] = true;
+      mouse.x = startX + cardW / 2;
+      mouse.y = cardY + cardH / 2;
+    }
+    if (now['ArrowRight'] && !prev['ArrowRight']) {
+      keys['Digit2'] = true;
+      mouse.x = startX + cardW + gap + cardW / 2;
+      mouse.y = cardY + cardH / 2;
+    }
+    return;
+  }
+
+  const isTitle = gs.state === 'title';
+  const isPaused = gs.state === 'playing' && gs.paused && !gs._layoutEditorOpen;
+  const isGameOver = gs.state === 'gameover';
+  if (!isTitle && !isPaused && !isGameOver) { _gpMenuState = ''; return; }
+
+  // ─── CONSTRUIR LISTA DE BOTONES SEGÚN EL ESTADO ───
+  let buttons = [];
+  if (isTitle) {
+    if (gs.state === 'title' && typeof _titleOptionsOpen !== 'undefined' && _titleOptionsOpen) {
+      buttons = [_titleMusicMinus, _titleMusicPlus, _titleSfxMinus, _titleSfxPlus, _titleOptsBack].filter(Boolean);
+    } else {
+      buttons = [_titlePlayBtn, _titleOptsBtn].filter(Boolean);
+    }
+  } else if (isPaused) {
+    if (gs._pauseOptionsOpen) {
+      buttons = [gs._pauseVolMinus, gs._pauseVolPlus, gs._pauseSfxMinus, gs._pauseSfxPlus, gs._pauseLayoutBtn, gs._pauseBtns?.menu].filter(Boolean);
+    } else if (gs._pauseBtns) {
+      buttons = [gs._pauseBtns.resume, gs._pauseBtns.options, gs._pauseBtns.menu].filter(Boolean);
+    }
+  } else if (isGameOver) {
+    buttons = [
+      { x: LOGICAL_W/2-140, y: 310, w: 280, h: 44 },
+      { x: LOGICAL_W/2-140, y: 368, w: 280, h: 44 }
+    ];
+  }
+  if (!buttons.length) return;
+
+  // ─── ID ÚNICO DEL ESTADO PARA REINICIAR FOCUS AL CAMBIAR ───
+  const stateId = gs.state + '|' + (!!_titleOptionsOpen) + '|' + (!!gs._pauseOptionsOpen) + '|' + (!!gs.paused);
+  if (_gpMenuState !== stateId) {
+    _gpMenuState = stateId;
+    _gpMenuFocus = 0;
+  }
+
+  // ─── MOVER EL CURSOR DEL MOUSE AL BOTÓN ENFOCADO ───
+  // Para que los efectos hover de los botones se activen con el mando
+  function gpMoveCursorTo(idx) {
+    const btn = buttons[idx];
+    if (btn) { mouse.x = btn.x + btn.w / 2; mouse.y = btn.y + btn.h / 2; }
+  }
+  gpMoveCursorTo(_gpMenuFocus);
+
+  // ─── NAVEGAR CON D-PAD ARRIBA/ABAJO ───
+  if (now['ArrowUp'] && !prev['ArrowUp']) {
+    _gpMenuFocus = (_gpMenuFocus - 1 + buttons.length) % buttons.length;
+    gpMoveCursorTo(_gpMenuFocus);
+  }
+  if (now['ArrowDown'] && !prev['ArrowDown']) {
+    _gpMenuFocus = (_gpMenuFocus + 1) % buttons.length;
+    gpMoveCursorTo(_gpMenuFocus);
+  }
+
+  // ─── AJUSTAR VOLUMEN CON D-PAD IZQUIERDA/DERECHA ───
+  // Dentro de opciones: MUSIC −/MUSIC + están en índices 0 y 1; SFX −/+ en 2 y 3
+  if (now['ArrowLeft'] && !prev['ArrowLeft']) {
+    if (isTitle && _titleOptionsOpen) {
+      if (_gpMenuFocus === 0) { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); updateMenuMusicVolume?.(); updateBgMusicVolume?.(); }
+      if (_gpMenuFocus === 2) { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); }
+    }
+    if (isPaused && gs._pauseOptionsOpen) {
+      if (_gpMenuFocus === 0) { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); if (bgMusic) bgMusic.volume = 0.4 * masterVolume; }
+      if (_gpMenuFocus === 2) { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); }
+    }
+  }
+  if (now['ArrowRight'] && !prev['ArrowRight']) {
+    if (isTitle && _titleOptionsOpen) {
+      if (_gpMenuFocus === 0) { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); updateMenuMusicVolume?.(); updateBgMusicVolume?.(); }
+      if (_gpMenuFocus === 2) { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); }
+    }
+    if (isPaused && gs._pauseOptionsOpen) {
+      if (_gpMenuFocus === 0) { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); if (bgMusic) bgMusic.volume = 0.4 * masterVolume; }
+      if (_gpMenuFocus === 2) { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); }
+    }
+  }
+
+  // ─── CONFIRMAR CON CROSS (btn[0]) ───
+  if (now['Space'] && !prev['Space']) {
+    const btn = buttons[_gpMenuFocus];
+    if (btn) {
+      mouse.x = btn.x + btn.w / 2;
+      mouse.y = btn.y + btn.h / 2;
+      pointerPressed = true;
+      // En título, si el foco NO es JUGAR, evitar que Enter inicie el juego
+      if (isTitle && !_titleOptionsOpen && _gpMenuFocus !== 0) {
+        keys['Enter'] = false;
+        keys['NumpadEnter'] = false;
+      }
+    }
+  }
+
+  // ─── CANCELAR/VOLVER CON CIRCLE (btn[1]) ───
+  if (now['KeyE'] && !prev['KeyE']) {
+    if (_titleOptionsOpen) {
+      if (_titleOptsBack) {
+        mouse.x = _titleOptsBack.x + _titleOptsBack.w / 2;
+        mouse.y = _titleOptsBack.y + _titleOptsBack.h / 2;
+        pointerPressed = true;
+      }
+    } else if (isPaused) {
+      gs.paused = false;
+    }
+  }
 }
 
 canvas.addEventListener('pointerdown', handlePointerDown);
 canvas.addEventListener('pointermove', handlePointerMove);
 canvas.addEventListener('pointerup', handlePointerUp);
 canvas.addEventListener('pointercancel', handlePointerCancel);
-canvas.addEventListener('lostpointercapture', handlePointerCancel);
-
-window.addEventListener('blur', clearKeys);
-document.addEventListener('visibilitychange', function() {
-  if (document.hidden) clearKeys();
-});
-window.addEventListener('gameviewportchange', function() {
-  clearKeys();
-  // Un layout personalizado se normaliza al ancho nuevo al guardarlo; los
-  // defaults se recalculan para cada orientación para mantener ergonomía.
-  if (!touchLayoutCustomized) applyDefaultTouchLayout();
-  else loadTouchLayout();
-  mouse.x = Math.max(0, Math.min(LOGICAL_W, mouse.x));
-});
 
 // ─── CARGA DE LAYOUT PERSONALIZADO ───
 loadTouchLayout();

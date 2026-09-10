@@ -14,7 +14,7 @@
 
      Los wrappers de mapSystem.js reemplazan funciones globales de los pasos
      anteriores, por lo que DEBE cargarse DESPUÉS de todo lo que reemplaza. -->
-<html lang="es">
+<html lang="en">
 <head>
 <!-- ─── METADATOS ─── -->
 <meta charset="UTF-8">
@@ -26,6 +26,12 @@
 <!-- ─── HOJA DE ESTILOS ─── -->
 <!-- base.css: reset de márgenes, canvas a pantalla completa, cursor de mira (crosshair) -->
 <link rel="stylesheet" href="CSS/base.css">
+<!-- ─── [NEW] RESPONSIVE SCALING ─── -->
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #000; overflow: hidden; width: 100vw; height: 100vh; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; }
+</style>
 </head>
 <body>
 <!-- ─── CANVAS PRINCIPAL ─── -->
@@ -33,7 +39,7 @@
      menú principal, selección de mapas, escenario, jugador, zombies, jefe,
      balas, partículas, HUD, pantalla de game over, etc.
      El canvas se configura en JS/core/canvas.js con resolución lógica fija. -->
-<canvas id="c" role="application" aria-label="Shoot the Zombie" tabindex="0"></canvas>
+<canvas id="c"></canvas>
 
 <!-- ─── SCRIPTS: CONSTANTES ─── -->
 <!-- Archivos con valores fijos del juego: constantes globales (tamaños, velocidades),

@@ -6,14 +6,11 @@ const particles = [];
 // Útil como base para explosiones, sangre, fogonazos, etc.
 // Parámetros: cantidad, posición (x,y), color, velocidad, dispersión (radianes), gravedad, tamaño, vida (segundos)
 function spawnParticles(count, x, y, color, speed, spread, gravity, size, life) {
-  count = Math.max(1, Math.round(count * (typeof effectQuality === 'number' ? effectQuality : 1)));
-  const particleCap = (typeof lowPerformanceMode !== 'undefined' && lowPerformanceMode) ? 180 : 420;
   // Bucle que se repite tantas veces como partículas queramos crear
   for (let i=0; i<count; i++) {
     // Calcula un ángulo aleatorio dentro del rango indicado (spread)
     const a = Math.random() * spread - spread/2;
     // Agrega una nueva partícula al arreglo global con sus propiedades iniciales
-    if (particles.length >= particleCap) break;
     particles.push({
       x, y,                                       // Posición inicial (centro del origen)
       vx: Math.cos(a) * (speed * (0.5 + Math.random()*0.5)),  // Velocidad horizontal con variación aleatoria
@@ -39,8 +36,7 @@ function spawnBlood(x, y) {
 // Crea fragmentos rectangulares que salen disparados al destruir un enemigo
 function spawnDeathParts(x, y, color) {
   // Genera 12 fragmentos que vuelan en todas direcciones
-  const deathPartCount = typeof lowPerformanceMode !== 'undefined' && lowPerformanceMode ? 6 : 12;
-  for (let i=0; i<deathPartCount; i++) {
+  for (let i=0; i<12; i++) {
     // Ángulo aleatorio en un círculo completo (0 a 2*PI radianes)
     const a = Math.random() * Math.PI * 2;
     // Velocidad aleatoria entre 80 y 200 píxeles/segundo
@@ -67,8 +63,7 @@ function spawnExplosion(x, y) {
   // Capa de destellos rojos (10 partículas grandes)
   spawnParticles(10, x, y, '#ff3300', 150, Math.PI*2, GRAVITY, 6, 0.5);
   // Fragmentos grises que flotan hacia arriba (humo/escombros)
-  const smokeCount = typeof lowPerformanceMode !== 'undefined' && lowPerformanceMode ? 4 : 8;
-  for (let i=0; i<smokeCount; i++) {
+  for (let i=0; i<8; i++) {
     // Cada fragmento va en una dirección aleatoria
     const a = Math.random() * Math.PI * 2;
     particles.push({
@@ -94,8 +89,7 @@ function spawnMuzzle(x, y, col) {
 // Se llama en cada frame, pero respeta el límite para no saturar el rendimiento
 function spawnAsh() {
   // Solo crea cenizas si hay menos de 45 en pantalla (para no saturar)
-  const ashLimit = typeof lowPerformanceMode !== 'undefined' && lowPerformanceMode ? 20 : 45;
-  if (particles.filter(p=>p.isAsh).length < ashLimit) {
+  if (particles.filter(p=>p.isAsh).length < 45) {
     particles.push({
       x: Math.random()*LOGICAL_W*2, y: -5,            // Aparecen en la parte superior en cualquier X
       vx: -10 + Math.random()*5,                        // Se mueven un poco a la izquierda
