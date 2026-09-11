@@ -22,17 +22,23 @@ const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 function updatePlaying(gs, dt) {
   const p = gs.player;
 
-  // ─── [TOUCH] JOYSTICK AIM ───
-  // En teléfono, el jugador apunta hacia donde apunta el joystick
+  // ─── [TOUCH] AIM ───
+  // El pulgar izquierdo queda dedicado al movimiento. El derecho puede
+  // mantener FIRE y arrastrar para apuntar, o usar la zona central.
   if (showTouchControls && p) {
-    if (joystickActive) {
-      const aimSens = 20;
-      mouse.x = p.x - gs.camX + joystickKnobX * aimSens;
-      mouse.y = p.y - 20 + (gs.busCamY || 0) + joystickKnobY * aimSens;
+    const playerScreenX = p.x - gs.camX;
+    const playerScreenY = p.y - 20 + (gs.busCamY || 0);
+    const fireAimLength = Math.sqrt(fireAimDX * fireAimDX + fireAimDY * fireAimDY);
+    if (touchShooting && fireAimLength > 8) {
+      mouse.x = playerScreenX + fireAimDX / fireAimLength * 600;
+      mouse.y = playerScreenY + fireAimDY / fireAimLength * 600;
+    } else if (aimPointer >= 0) {
+      mouse.x = aimX;
+      mouse.y = aimY;
     } else {
       // Por defecto: apunta hacia donde mira el jugador
-      mouse.x = p.x - gs.camX + p.dir * 100;
-      mouse.y = p.y - 20 + (gs.busCamY || 0);
+      mouse.x = playerScreenX + p.dir * 100;
+      mouse.y = playerScreenY;
     }
   }
 

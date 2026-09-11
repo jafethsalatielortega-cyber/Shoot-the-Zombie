@@ -192,7 +192,7 @@ function drawTouchGamepad(gs) {
   ctx.fillStyle = 'rgba(255,255,255,0.4)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('MOVE', JOYSTICK_CENTER_X, 472);
+  ctx.fillText('MOVE', JOYSTICK_CENTER_X, 468);
 
   // ─── BOTÓN SHOOT ───
   ctx.beginPath();
@@ -206,11 +206,23 @@ function drawTouchGamepad(gs) {
   ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('FIRE', BTN_SHOOT_X, BTN_SHOOT_Y + 4);
+  if (touchShooting) {
+    ctx.beginPath();
+    ctx.moveTo(BTN_SHOOT_X, BTN_SHOOT_Y);
+    ctx.lineTo(BTN_SHOOT_X + fireAimDX, BTN_SHOOT_Y + fireAimDY);
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(BTN_SHOOT_X + fireAimDX, BTN_SHOOT_Y + fireAimDY, 9, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fill();
+  }
 
   // ─── BOTÓN JUMP ───
   ctx.beginPath();
   ctx.arc(BTN_JUMP_X, BTN_JUMP_Y, BTN_JUMP_R, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(80,150,255,0.5)';
+  ctx.fillStyle = isTouchControlPressed('jump') ? 'rgba(80,150,255,0.85)' : 'rgba(80,150,255,0.5)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(120,180,255,0.8)';
   ctx.lineWidth = 2;
@@ -223,7 +235,7 @@ function drawTouchGamepad(gs) {
   // ─── BOTÓN SPRINT ───
   ctx.beginPath();
   ctx.arc(BTN_SPRINT_X, BTN_SPRINT_Y, BTN_SPRINT_R, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,180,0,0.45)';
+  ctx.fillStyle = sprintToggled ? 'rgba(255,180,0,0.85)' : 'rgba(255,180,0,0.45)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,210,80,0.8)';
   ctx.lineWidth = 2;
@@ -236,7 +248,7 @@ function drawTouchGamepad(gs) {
   // ─── BOTÓN SWITCH (cambiar arma) ───
   ctx.beginPath();
   ctx.arc(BTN_SWITCH_X, BTN_SWITCH_Y, BTN_SWITCH_R, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(150,80,255,0.45)';
+  ctx.fillStyle = isTouchControlPressed('switch') ? 'rgba(150,80,255,0.85)' : 'rgba(150,80,255,0.45)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(180,120,255,0.8)';
   ctx.lineWidth = 2;
@@ -249,7 +261,7 @@ function drawTouchGamepad(gs) {
   // ─── BOTÓN RELOAD ───
   ctx.beginPath();
   ctx.arc(BTN_RELOAD_X, BTN_RELOAD_Y, BTN_RELOAD_R, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(80,200,100,0.45)';
+  ctx.fillStyle = isTouchControlPressed('reload') ? 'rgba(80,200,100,0.85)' : 'rgba(80,200,100,0.45)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(120,230,130,0.8)';
   ctx.lineWidth = 2;
@@ -262,7 +274,7 @@ function drawTouchGamepad(gs) {
   // ─── BOTÓN KNIFE ───
   ctx.beginPath();
   ctx.arc(BTN_KNIFE_X, BTN_KNIFE_Y, BTN_KNIFE_R, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,100,100,0.45)';
+  ctx.fillStyle = isTouchControlPressed('knife') ? 'rgba(255,100,100,0.85)' : 'rgba(255,100,100,0.45)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,140,140,0.8)';
   ctx.lineWidth = 2;
@@ -275,7 +287,7 @@ function drawTouchGamepad(gs) {
   // ─── BOTÓN GRENADE ───
   ctx.beginPath();
   ctx.arc(BTN_GRENADE_X, BTN_GRENADE_Y, BTN_GRENADE_R, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,120,30,0.5)';
+  ctx.fillStyle = isTouchControlPressed('grenade') ? 'rgba(255,120,30,0.9)' : 'rgba(255,120,30,0.5)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,160,60,0.8)';
   ctx.lineWidth = 2;
@@ -289,7 +301,7 @@ function drawTouchGamepad(gs) {
   if (gs && gs.selectedMap === 2) {
     ctx.beginPath();
     ctx.arc(BTN_BOARD_X, BTN_BOARD_Y, BTN_BOARD_R, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(200,140,60,0.45)';
+    ctx.fillStyle = isTouchControlPressed('board') ? 'rgba(200,140,60,0.85)' : 'rgba(200,140,60,0.45)';
     ctx.fill();
     ctx.strokeStyle = 'rgba(220,170,90,0.8)';
     ctx.lineWidth = 2;

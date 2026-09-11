@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shoot-the-zombie-v2';
+const CACHE_NAME = 'shoot-the-zombie-v3';
 const APP_SHELL = [
   './', './index.html', './CSS/base.css', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png',

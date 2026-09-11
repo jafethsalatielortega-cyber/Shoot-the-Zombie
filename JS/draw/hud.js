@@ -246,7 +246,9 @@ function drawHUD(gs) {
 
   // ─── BOTÓN DE PAUSA ───
   // Define la posición y tamaño del botón de pausa en la esquina superior derecha
-  const pauseBtn = { x: LOGICAL_W - 42, y: 10, w: 34, h: 26 };
+  const pauseBtn = showTouchControls
+    ? { x: LOGICAL_W - 58, y: 10, w: 48, h: 36 }
+    : { x: LOGICAL_W - 42, y: 10, w: 34, h: 26 };
   // Cambia el color si el juego está pausado (naranja) o no (gris semitransparente)
   ctx.fillStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.18)';
   ctx.strokeStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.4)';
