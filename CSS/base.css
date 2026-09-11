@@ -19,3 +19,61 @@ body { background: #000; overflow: hidden; display: flex; align-items: center; j
    cursor: crosshair cambia el cursor del mouse a una mira de
    precisión, ideal para un juego de disparos. */
 canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+
+/* ─── INSTALACIÓN COMO APLICACIÓN ─── */
+.pwa-install[hidden] { display: none; }
+.pwa-install {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+           max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  background: rgba(0, 0, 0, .86);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #fff;
+  touch-action: manipulation;
+}
+.pwa-install__card {
+  width: min(92vw, 430px);
+  max-height: min(90dvh, 520px);
+  overflow: auto;
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 16px;
+  padding: 22px;
+  border: 2px solid #d21f2b;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #210507, #090909 65%);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .7), 0 0 30px rgba(210, 31, 43, .22);
+}
+.pwa-install__card img { border-radius: 16px; box-shadow: 0 0 18px rgba(255, 32, 32, .35); }
+.pwa-install__copy { align-self: center; }
+.pwa-install__copy h1 { margin: 0 0 7px; font-size: clamp(17px, 4.5vw, 22px); line-height: 1.12; color: #ff4048; }
+.pwa-install__copy p { margin: 0; color: #d6d6d6; font-size: clamp(12px, 3.4vw, 14px); line-height: 1.45; }
+.pwa-install button {
+  min-height: 48px;
+  border-radius: 10px;
+  font: 700 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.pwa-install__primary { grid-column: 1 / -1; border: 1px solid #ff5058; background: #a50f19; color: #fff; }
+.pwa-install__secondary { grid-column: 1 / -1; border: 1px solid #555; background: #171717; color: #bbb; }
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .pwa-install__card {
+    width: min(88vw, 620px);
+    grid-template-columns: 64px 1fr auto;
+    align-items: center;
+    padding: 14px 16px;
+  }
+  .pwa-install__card img { width: 64px; height: 64px; }
+  .pwa-install__primary { grid-column: 3; grid-row: 1; padding: 0 18px; }
+  .pwa-install__secondary { grid-column: 2 / 4; min-height: 38px; }
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .pwa-install { display: none !important; }
+}

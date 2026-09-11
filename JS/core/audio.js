@@ -69,6 +69,8 @@ function updateMenuMusicVolume() {
 // Inicia la música del menú principal en bucle
 function startMenuMusic() {
   if (!menuMusic) return;
+  // Respeta la política de autoplay: se inicia tras el primer toque/clic.
+  if (!audioInit) return;
   if (!menuMusic.paused) return;
   try { menuMusic.currentTime = 0; menuMusic.volume = 0.4 * masterVolume; menuMusic.play(); } catch(e) {}
 }
@@ -88,27 +90,82 @@ function stopBgMusic() {
 // Indica si el audio ya fue inicializado tras la primera interacción del usuario
 let audioInit = false;
 
-// Solicita pantalla completa y bloquea orientación a landscape en móviles.
-// Se llama en CADA interacción del usuario (toque, click, tecla) para reintentar
-// si la solicitud previa fue denegada o el navegador la ignoró.
-function requestFullscreenAndLock() {
-  // ─── Pantalla completa (móvil y PC) ───
-  try {
-    if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-      const el = document.documentElement;
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.msRequestFullscreen) el.msRequestFullscreen();
-    }
-  } catch(e) {}
-  // ─── Bloqueo de orientación a landscape en móviles ───
-  // La pantalla se girará automáticamente, el usuario no necesita rotar manualmente
-  try {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(function(){});
-    }
-  } catch(e) {}
+// Solicita pantalla completa y después bloquea landscape exclusivamente en
+// teléfonos/tablets. El orden es importante: Chromium sólo permite bloquear
+// orientación cuando el documento ya está en fullscreen.
+let immersiveRequestInFlight = null;
+let immersiveModeReady = false;
+let lastImmersiveAttempt = 0;
+
+function isMobileOrTablet() {
+  const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const finePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const ua = navigator.userAgent || '';
+  const mobileUA = /Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|Kindle/i.test(ua);
+  const iPadDesktopUA = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
+  return mobileUA || iPadDesktopUA || (coarse && !finePointer);
 }
+
+function lockLandscapeOrientation() {
+  try {
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      return Promise.resolve(screen.orientation.lock('landscape')).then(function() {
+        immersiveModeReady = true;
+        if (typeof resizeCanvas === 'function') resizeCanvas();
+        return true;
+      }).catch(function() { return false; });
+    }
+    const legacyLock = screen.lockOrientation || screen.mozLockOrientation || screen.msLockOrientation;
+    if (legacyLock) {
+      immersiveModeReady = legacyLock.call(screen, 'landscape') !== false;
+      return Promise.resolve(immersiveModeReady);
+    }
+  } catch(e) {}
+  return Promise.resolve(false);
+}
+
+function requestFullscreenAndLock() {
+  if (!isMobileOrTablet() || immersiveModeReady) return Promise.resolve(immersiveModeReady);
+  if (immersiveRequestInFlight) return immersiveRequestInFlight;
+
+  // Evita solicitudes duplicadas del mismo toque; permite reintentar en un
+  // gesto posterior si el navegador rechazó la primera.
+  const now = Date.now();
+  if (now - lastImmersiveAttempt < 900) return Promise.resolve(false);
+  lastImmersiveAttempt = now;
+
+  immersiveRequestInFlight = (async function() {
+    const root = document.documentElement;
+    const alreadyFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    try {
+      if (!alreadyFullscreen) {
+        if (root.requestFullscreen) await root.requestFullscreen();
+        else if (root.webkitRequestFullscreen) await Promise.resolve(root.webkitRequestFullscreen());
+        else if (root.msRequestFullscreen) await Promise.resolve(root.msRequestFullscreen());
+      }
+    } catch(e) {
+      // En navegadores sin Fullscreen API se intenta igualmente el lock nativo.
+    }
+
+    const locked = await lockLandscapeOrientation();
+    if (typeof resizeCanvas === 'function') resizeCanvas();
+    return locked || Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+  })().finally(function() {
+    immersiveRequestInFlight = null;
+  });
+
+  return immersiveRequestInFlight;
+}
+
+// Refuerza el bloqueo justo cuando fullscreen termina de activarse.
+document.addEventListener('fullscreenchange', function() {
+  if (document.fullscreenElement && isMobileOrTablet()) lockLandscapeOrientation();
+  else if (!document.fullscreenElement) immersiveModeReady = false;
+});
+document.addEventListener('webkitfullscreenchange', function() {
+  if (document.webkitFullscreenElement && isMobileOrTablet()) lockLandscapeOrientation();
+  else if (!document.webkitFullscreenElement) immersiveModeReady = false;
+});
 
 // Marca el audio como iniciado, garantiza que el contexto de audio esté listo
 function initAudio() {

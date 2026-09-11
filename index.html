@@ -20,7 +20,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Zombies">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="screen-orientation" content="landscape">
+<meta name="x5-orientation" content="landscape">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <!-- Título visible en la pestaña del navegador -->
 <title>Shoot the Zombie</title>
 <!-- ─── HOJA DE ESTILOS ─── -->
@@ -34,6 +42,19 @@ canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edge
 </style>
 </head>
 <body>
+<!-- Invitación de instalación. Sólo se muestra en teléfonos/tablets y
+     desaparece por completo cuando el juego ya se ejecuta como aplicación. -->
+<section id="pwaInstall" class="pwa-install" hidden aria-labelledby="pwaInstallTitle" role="dialog" aria-modal="true">
+  <div class="pwa-install__card">
+    <img src="icons/icon-192.png" width="72" height="72" alt="">
+    <div class="pwa-install__copy">
+      <h1 id="pwaInstallTitle">Instalar Shoot the Zombie</h1>
+      <p id="pwaInstallText">Juega como una aplicación: pantalla completa, sin barras del navegador.</p>
+    </div>
+    <button id="pwaInstallButton" class="pwa-install__primary" type="button">Instalar aplicación</button>
+    <button id="pwaInstallClose" class="pwa-install__secondary" type="button">Ahora no</button>
+  </div>
+</section>
 <!-- ─── CANVAS PRINCIPAL ─── -->
 <!-- El <canvas> es el único elemento visual del juego. Aquí se renderiza TODO:
      menú principal, selección de mapas, escenario, jugador, zombies, jefe,
@@ -112,5 +133,6 @@ canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edge
 <script src="JS/main.js"></script>
 <script src="JS/maps/mapSystem.js"></script>
 <script src="JS/maps/mapBus.js"></script>
+<script src="JS/core/pwa.js"></script>
 </body>
 </html>
