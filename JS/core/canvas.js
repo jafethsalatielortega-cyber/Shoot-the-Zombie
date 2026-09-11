@@ -10,42 +10,51 @@ const ctx = canvas.getContext('2d');
 // Factor de escala que adapta el canvas a la ventana del navegador
 let scale = 1;
 
-// ─── REDIMENSIONADO ───
+// ─── REDIMENSIONADO ESTABLE ───
+// Usa un único cálculo por frame. visualViewport representa el área realmente
+// visible en móviles y evita saltos cuando aparecen/desaparecen las barras del
+// navegador o al entrar en pantalla completa.
+let resizeFrame = 0;
 
-// Ajusta el tamaño visual del canvas para que encaje en la ventana
-// sin deformar la resolución lógica interna del juego.
-function resize() {
-  const sw = window.innerWidth / LOGICAL_W;   // Escala horizontal
-  const sh = window.innerHeight / LOGICAL_H;   // Escala vertical
-  scale = Math.min(sw, sh);                     // Usa la escala más pequeña para evitar recortes
-  canvas.width  = LOGICAL_W;                    // Tamaño interno fijo (lógico)
-  canvas.height = LOGICAL_H;
-  canvas.style.width  = (LOGICAL_W * scale) + 'px';  // Tamaño visual escalado
-  canvas.style.height = (LOGICAL_H * scale) + 'px';
-}
-resize();                                      // Aplica el tamaño inicial al cargar la página
-// Reajusta el canvas cuando el usuario cambia el tamaño de la ventana
-window.addEventListener('resize', resize);
+function applyCanvasSize() {
+  resizeFrame = 0;
+  const viewport = window.visualViewport;
+  const vw = Math.max(1, viewport ? viewport.width : document.documentElement.clientWidth);
+  const vh = Math.max(1, viewport ? viewport.height : document.documentElement.clientHeight);
+  const vx = viewport ? viewport.offsetLeft : 0;
+  const vy = viewport ? viewport.offsetTop : 0;
+  const bodyStyle = window.getComputedStyle(document.body);
+  const safeTop = parseFloat(bodyStyle.paddingTop) || 0;
+  const safeRight = parseFloat(bodyStyle.paddingRight) || 0;
+  const safeBottom = parseFloat(bodyStyle.paddingBottom) || 0;
+  const safeLeft = parseFloat(bodyStyle.paddingLeft) || 0;
+  const usableWidth = Math.max(1, vw - safeLeft - safeRight);
+  const usableHeight = Math.max(1, vh - safeTop - safeBottom);
 
-// ─── [NEW] UNIVERSAL CANVAS SCALING ───
-// Reemplaza el escalado básico por uno que centra el canvas en cualquier
-// pantalla: teléfonos, tablets, laptops, Smart TVs 4K.
-function resizeCanvas() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const scaleX = vw / LOGICAL_W;
-  const scaleY = vh / LOGICAL_H;
-  scale = Math.min(scaleX, scaleY);
-  canvas.width = LOGICAL_W;
-  canvas.height = LOGICAL_H;
-  canvas.style.position = 'absolute';
-  canvas.style.width = Math.floor(LOGICAL_W * scale) + 'px';
-  canvas.style.height = Math.floor(LOGICAL_H * scale) + 'px';
-  canvas.style.left = Math.floor((vw - LOGICAL_W * scale) / 2) + 'px';
-  canvas.style.top = Math.floor((vh - LOGICAL_H * scale) / 2) + 'px';
-  // Smart TV 4K: imagen suave en vez de pixelada
+  scale = Math.min(usableWidth / LOGICAL_W, usableHeight / LOGICAL_H);
+  const renderedWidth = LOGICAL_W * scale;
+  const renderedHeight = LOGICAL_H * scale;
+
+  // La resolución lógica nunca cambia; así el contexto no se reinicia durante
+  // los eventos de resize emitidos por el navegador móvil.
+  if (canvas.width !== LOGICAL_W) canvas.width = LOGICAL_W;
+  if (canvas.height !== LOGICAL_H) canvas.height = LOGICAL_H;
+  canvas.style.width = renderedWidth + 'px';
+  canvas.style.height = renderedHeight + 'px';
+  canvas.style.left = (vx + safeLeft + (usableWidth - renderedWidth) / 2) + 'px';
+  canvas.style.top = (vy + safeTop + (usableHeight - renderedHeight) / 2) + 'px';
   canvas.style.imageRendering = vw > 1800 ? 'auto' : 'pixelated';
 }
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-window.addEventListener('orientationchange', resizeCanvas);
+
+function resizeCanvas() {
+  if (resizeFrame) cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(applyCanvasSize);
+}
+
+applyCanvasSize();
+window.addEventListener('resize', resizeCanvas, { passive: true });
+window.addEventListener('orientationchange', resizeCanvas, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resizeCanvas, { passive: true });
+  window.visualViewport.addEventListener('scroll', resizeCanvas, { passive: true });
+}

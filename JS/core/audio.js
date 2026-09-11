@@ -94,7 +94,9 @@ let audioInit = false;
 // teléfonos/tablets. El orden es importante: Chromium sólo permite bloquear
 // orientación cuando el documento ya está en fullscreen.
 let immersiveRequestInFlight = null;
-let immersiveModeReady = false;
+let immersiveModeReady = window.matchMedia('(display-mode: standalone)').matches ||
+  window.matchMedia('(display-mode: fullscreen)').matches ||
+  window.navigator.standalone === true;
 let lastImmersiveAttempt = 0;
 
 function isMobileOrTablet() {
@@ -148,8 +150,12 @@ function requestFullscreenAndLock() {
     }
 
     const locked = await lockLandscapeOrientation();
+    const fullscreenActive = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+    // Pantalla completa ya es un resultado válido aunque el navegador no
+    // implemente orientation.lock. Evita reintentos que causan reescalados.
+    if (fullscreenActive) immersiveModeReady = true;
     if (typeof resizeCanvas === 'function') resizeCanvas();
-    return locked || Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+    return locked || fullscreenActive;
   })().finally(function() {
     immersiveRequestInFlight = null;
   });

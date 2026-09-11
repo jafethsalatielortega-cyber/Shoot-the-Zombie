@@ -70,8 +70,8 @@ document.addEventListener('keyup', e => { keys[e.code] = false; });
 // de pantalla a coordenadas del canvas dividiendo por el factor de escala.
 document.addEventListener('mousemove', e => {
   const rect = canvas.getBoundingClientRect();
-  mouse.x = (e.clientX - rect.left) / scale;
-  mouse.y = (e.clientY - rect.top)  / scale;
+  mouse.x = (e.clientX - rect.left) * LOGICAL_W / rect.width;
+  mouse.y = (e.clientY - rect.top) * LOGICAL_H / rect.height;
 });
 // Al hacer clic en el canvas: marca el botón como presionado, solicita pantalla completa e inicializa el audio si es necesario
 canvas.addEventListener('mousedown', e => {
@@ -192,7 +192,10 @@ function resetTouchLayout() {
 
 function getCanvasCoords(px, py) {
   const rect = canvas.getBoundingClientRect();
-  return { x: (px - rect.left) / scale, y: (py - rect.top) / scale };
+  return {
+    x: (px - rect.left) * LOGICAL_W / rect.width,
+    y: (py - rect.top) * LOGICAL_H / rect.height
+  };
 }
 
 function dist(x1, y1, x2, y2) {
