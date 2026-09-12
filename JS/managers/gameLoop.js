@@ -4,11 +4,15 @@ let _mysteryBoxWeaponIdx = -1;
 let _mysteryBoxHoldTime = 0;
 const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 
-// Sensibilidad de puntería táctil. El movimiento es proporcional al recorrido
-// real del joystick para evitar que un desplazamiento mínimo mande la mira al
-// extremo de la pantalla.
-const TOUCH_AIM_DEADZONE = 12;
-const TOUCH_AIM_SENSITIVITY = 7;
+// Puntería táctil estabilizada: zona muerta, respuesta progresiva y límite de
+// velocidad angular. Un cambio claro de izquierda/derecha se aplica de
+// inmediato para que nunca dispare hacia el lado opuesto.
+const TOUCH_AIM_DEADZONE = 14;
+const TOUCH_AIM_MIN_DISTANCE = 135;
+const TOUCH_AIM_MAX_DISTANCE = 360;
+const TOUCH_AIM_ANGULAR_SPEED = 11;
+let touchAimAngle = 0;
+let touchAimEngaged = false;
 
 // ─── ACTUALIZAR JUEGO ───
 // Función principal que se ejecuta cada frame mientras el estado es 'playing'.
@@ -37,12 +41,39 @@ function updatePlaying(gs, dt) {
     const playerScreenY = p.y - 20 + (gs.busCamY || 0);
     const joystickLength = Math.sqrt(joystickKnobX * joystickKnobX + joystickKnobY * joystickKnobY);
     if (joystickActive && joystickLength > TOUCH_AIM_DEADZONE) {
-      mouse.x = playerScreenX + joystickKnobX * TOUCH_AIM_SENSITIVITY;
-      mouse.y = playerScreenY + joystickKnobY * TOUCH_AIM_SENSITIVITY;
+      const targetAngle = Math.atan2(joystickKnobY, joystickKnobX);
+      if (!touchAimEngaged) {
+        touchAimAngle = targetAngle;
+      } else {
+        const currentSide = Math.sign(Math.cos(touchAimAngle));
+        const targetSide = Math.sign(Math.cos(targetAngle));
+        const strongHorizontalInput = Math.abs(joystickKnobX) > TOUCH_AIM_DEADZONE;
+        if (strongHorizontalInput && currentSide !== targetSide) {
+          // Los cambios de lado son instantáneos: jamás conserva el lado viejo.
+          touchAimAngle = targetAngle;
+        } else {
+          const angleDifference = Math.atan2(
+            Math.sin(targetAngle - touchAimAngle),
+            Math.cos(targetAngle - touchAimAngle)
+          );
+          const maxAngleStep = TOUCH_AIM_ANGULAR_SPEED * dt;
+          touchAimAngle += Math.max(-maxAngleStep, Math.min(maxAngleStep, angleDifference));
+        }
+      }
+      touchAimEngaged = true;
+      const travel = Math.min(1, Math.max(0,
+        (joystickLength - TOUCH_AIM_DEADZONE) / (JOYSTICK_CLAMP - TOUCH_AIM_DEADZONE)
+      ));
+      const aimDistance = TOUCH_AIM_MIN_DISTANCE +
+        (TOUCH_AIM_MAX_DISTANCE - TOUCH_AIM_MIN_DISTANCE) * Math.pow(travel, 1.35);
+      mouse.x = playerScreenX + Math.cos(touchAimAngle) * aimDistance;
+      mouse.y = playerScreenY + Math.sin(touchAimAngle) * aimDistance;
     } else if (aimPointer >= 0) {
+      touchAimEngaged = false;
       mouse.x = aimX;
       mouse.y = aimY;
     } else {
+      touchAimEngaged = false;
       // Por defecto: apunta hacia donde mira el jugador
       mouse.x = playerScreenX + p.dir * 100;
       mouse.y = playerScreenY;

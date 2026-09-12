@@ -28,6 +28,8 @@ let joystickActive = false;
 let joystickPointer = -1;
 let joystickKnobX = 0;
 let joystickKnobY = 0;
+let joystickOriginX = 110;
+let joystickOriginY = 380;
 // Estado de punteros táctiles
 const touches = {};
 let aimPointer = -1;
@@ -196,6 +198,10 @@ function resetTouchLayout() {
   BTN_GRENADE_X = 970; BTN_GRENADE_Y = 330; BTN_GRENADE_R = 32;
   BTN_BOARD_X = 1010; BTN_BOARD_Y = 235; BTN_BOARD_R = 32;
   AIM_ZONE_X1 = 210; AIM_ZONE_X2 = 900;
+  if (!joystickActive) {
+    joystickOriginX = JOYSTICK_CENTER_X;
+    joystickOriginY = JOYSTICK_CENTER_Y;
+  }
   saveTouchLayout();
 }
 
@@ -237,15 +243,18 @@ function handlePointerDown(e) {
   mouse.x = p.x;
   mouse.y = p.y;
 
-  // Joystick (zona izquierda)
-  if (dist(p.x, p.y, JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y) < JOYSTICK_OUTER_R + 10) {
+  // Joystick flotante: durante la partida acepta el pulgar en una zona
+  // izquierda amplia y coloca el centro debajo del punto inicial.
+  const playingNow = typeof gs !== 'undefined' && gs && gs.state === 'playing' && !gs.paused;
+  const inLeftThumbZone = playingNow && p.x <= 285 && p.y >= 190;
+  const nearConfiguredJoystick = dist(p.x, p.y, JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y) < JOYSTICK_OUTER_R + 18;
+  if (inLeftThumbZone || nearConfiguredJoystick) {
     joystickPointer = id;
     joystickActive = true;
-    const dx = p.x - JOYSTICK_CENTER_X;
-    const dy = p.y - JOYSTICK_CENTER_Y;
-    const d = Math.sqrt(dx*dx + dy*dy);
-    joystickKnobX = d > JOYSTICK_CLAMP ? dx / d * JOYSTICK_CLAMP : dx;
-    joystickKnobY = d > JOYSTICK_CLAMP ? dy / d * JOYSTICK_CLAMP : dy;
+    joystickOriginX = Math.max(82, Math.min(215, p.x));
+    joystickOriginY = Math.max(275, Math.min(395, p.y));
+    joystickKnobX = 0;
+    joystickKnobY = 0;
     updateJoystickKeys();
     return;
   }
@@ -335,8 +344,8 @@ function handlePointerMove(e) {
 
   // Arrastre del joystick
   if (id === joystickPointer && joystickActive) {
-    const dx = p.x - JOYSTICK_CENTER_X;
-    const dy = p.y - JOYSTICK_CENTER_Y;
+    const dx = p.x - joystickOriginX;
+    const dy = p.y - joystickOriginY;
     const d = Math.sqrt(dx*dx + dy*dy);
     joystickKnobX = d > JOYSTICK_CLAMP ? dx / d * JOYSTICK_CLAMP : dx;
     joystickKnobY = d > JOYSTICK_CLAMP ? dy / d * JOYSTICK_CLAMP : dy;
@@ -382,6 +391,8 @@ function handlePointerUp(e) {
     joystickPointer = -1;
     joystickKnobX = 0;
     joystickKnobY = 0;
+    joystickOriginX = JOYSTICK_CENTER_X;
+    joystickOriginY = JOYSTICK_CENTER_Y;
     keys['KeyA'] = false;
     keys['KeyD'] = false;
   }

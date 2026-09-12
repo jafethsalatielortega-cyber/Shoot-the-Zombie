@@ -175,15 +175,17 @@ function drawTouchGamepad(gs) {
   // ─── JOYSTICK (movimiento, lado izquierdo) ───
   // Anillo exterior
   ctx.beginPath();
-  ctx.arc(JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y, JOYSTICK_OUTER_R, 0, Math.PI * 2);
+  const joystickDrawX = joystickActive ? joystickOriginX : JOYSTICK_CENTER_X;
+  const joystickDrawY = joystickActive ? joystickOriginY : JOYSTICK_CENTER_Y;
+  ctx.arc(joystickDrawX, joystickDrawY, JOYSTICK_OUTER_R, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255,255,255,0.12)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.3)';
   ctx.lineWidth = 2;
   ctx.stroke();
   // Perilla interna (sigue el toque)
-  const knobX = JOYSTICK_CENTER_X + joystickKnobX;
-  const knobY = JOYSTICK_CENTER_Y + joystickKnobY;
+  const knobX = joystickDrawX + joystickKnobX;
+  const knobY = joystickDrawY + joystickKnobY;
   ctx.beginPath();
   ctx.arc(knobX, knobY, 30, 0, Math.PI * 2);
   ctx.fillStyle = joystickActive ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.25)';
@@ -192,7 +194,7 @@ function drawTouchGamepad(gs) {
   ctx.fillStyle = 'rgba(255,255,255,0.4)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('MOVE', JOYSTICK_CENTER_X, 468);
+  ctx.fillText('MOVE / AIM', joystickDrawX, Math.min(LOGICAL_H - 8, joystickDrawY + JOYSTICK_OUTER_R + 12));
 
   // ─── BOTÓN SHOOT ───
   ctx.beginPath();
