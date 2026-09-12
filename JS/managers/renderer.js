@@ -313,19 +313,25 @@ function drawTouchGamepad(gs) {
   }
 
   // ─── INDICADOR DE PUNTERÍA TÁCTIL ───
-  // Pequeña cruceta que muestra hacia dónde apunta el jugador con el toque
-  if (aimPointer >= 0 && !showTouchControls) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = 1;
+  // Muestra el mismo punto que utiliza tryShoot para calcular la trayectoria.
+  if (showTouchControls && (aimPointer >= 0 || touchShooting)) {
+    const crosshairX = Math.max(14, Math.min(LOGICAL_W - 14, mouse.x));
+    const crosshairY = Math.max(14, Math.min(LOGICAL_H - 14, mouse.y));
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 2;
     // Línea horizontal
     ctx.beginPath();
-    ctx.moveTo(aimX - 8, aimY);
-    ctx.lineTo(aimX + 8, aimY);
+    ctx.moveTo(crosshairX - 12, crosshairY);
+    ctx.lineTo(crosshairX + 12, crosshairY);
     ctx.stroke();
     // Línea vertical
     ctx.beginPath();
-    ctx.moveTo(aimX, aimY - 8);
-    ctx.lineTo(aimX, aimY + 8);
+    ctx.moveTo(crosshairX, crosshairY - 12);
+    ctx.lineTo(crosshairX, crosshairY + 12);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(crosshairX, crosshairY, 6, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,70,70,0.9)';
     ctx.stroke();
   }
 

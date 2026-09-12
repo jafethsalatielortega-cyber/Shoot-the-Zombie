@@ -852,7 +852,15 @@ function tryShoot(gs) {
   // Convierte la posición del mouse a coordenadas del mundo (sumando el desplazamiento de cámara)
   const worldMouseX = mouse.x + gs.camX;
   const worldMouseY = mouse.y - (gs.busCamY || 0);
-  const baseAngle = Math.atan2(worldMouseY - (p.y - 20), worldMouseX - p.x); // Ángulo hacia el mouse
+  const aimDeltaX = worldMouseX - p.x;
+  const aimDeltaY = worldMouseY - (p.y - 20);
+  // Sprite, fogonazo y proyectil comparten exactamente el mismo vector.
+  // Si el objetivo coincide con el jugador, conserva la dirección actual.
+  const baseAngle = Math.abs(aimDeltaX) + Math.abs(aimDeltaY) > 0.001
+    ? Math.atan2(aimDeltaY, aimDeltaX)
+    : (p.dir < 0 ? Math.PI : 0);
+  const shotDirectionX = Math.cos(baseAngle);
+  if (Math.abs(shotDirectionX) > 0.001) p.dir = shotDirectionX > 0 ? 1 : -1;
   const pellets = p.weapon.pellets || 1;                  // Número de proyectiles por disparo (escopeta tiene varios)
 
   // ─── CREAR BALAS ───
