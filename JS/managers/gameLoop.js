@@ -158,15 +158,9 @@ function updatePlaying(gs, dt) {
   // Sistema de entrada → velocidad horizontal.
   // Usa aceleración suave (no instantánea) para dar sensación de peso,
   // y fricción exponencial cuando no se presiona ninguna tecla.
-  // Detecta si el jugador está presionando Shift (correr) y si tiene stamina
-  const wantSprint = (keys['ShiftLeft'] || keys['ShiftRight']) && p.stamina > 0;
-  p.sprinting = wantSprint;
-  // Drena stamina al correr, regenera al caminar/quieto
-  if (p.sprinting && Math.abs(p.vx) > 10) {
-    p.stamina = Math.max(0, p.stamina - 28 * dt);
-  } else {
-    p.stamina = Math.min(p.maxStamina, p.stamina + 18 * dt);
-  }
+  // Correr no consume energía: permanece activo mientras Shift esté
+  // presionado o mientras el botón táctil RUN esté activado.
+  p.sprinting = !!(keys['ShiftLeft'] || keys['ShiftRight']);
   // Calcula la velocidad: normal o multiplicada por el sprint
   const speed = WALK_SPEED * (p.sprinting ? SPRINT_MULT : 1);
 
@@ -368,7 +362,7 @@ function updatePlaying(gs, dt) {
   // Detecta flanco de subida de la tecla G
   if ((keys['KeyG']) && !p._gBuf && p.grenadeCooldown <= 0 && !p.dead) {
     p._gBuf = true;
-    p.grenadeCooldown = 25;                                      // Enfriamiento de 25 segundos
+    p.grenadeCooldown = 15;                                      // Enfriamiento de 15 segundos
     // Crea una nueva granada con física parabólica
     gs.grenades.push({
       x: p.x + p.dir * 15,                                      // Posición inicial: frente al jugador

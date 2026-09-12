@@ -1178,36 +1178,10 @@ function drawBusMysteryBox(gs) {
   const bx = _mysteryBoxX, by = BUS_ROOF_Y + mvibe;
   const pulse = Math.sin(Date.now() * 0.004) * 0.12 + 0.88;
   ctx.save();
-  if (boxActive) {
-    ctx.shadowColor = '#ffcc00';
-    ctx.shadowBlur = 18 * pulse;
-  }
-  ctx.fillStyle = '#5C3A1E';
-  ctx.beginPath(); ctx.roundRect(bx - 22, by - 38, 44, 38, 4); ctx.fill();
-  ctx.strokeStyle = boxActive ? '#C8943C' : '#8A6A3A';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(bx - 22, by - 38, 44, 38);
-  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 3; i++) {
-    const lx = bx - 14 + i * 14;
-    ctx.beginPath(); ctx.moveTo(lx, by - 36); ctx.lineTo(lx, by - 2); ctx.stroke();
-  }
-  ctx.fillStyle = boxActive ? '#C8943C' : '#7A5A2A';
-  ctx.fillRect(bx - 2, by - 20, 4, 16);
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.fillRect(bx - 1, by - 18, 2, 12);
-  ctx.shadowColor = boxActive ? '#ffcc00' : '#8A6A3A';
-  ctx.shadowBlur = boxActive ? 10 * pulse : 0;
-  ctx.fillStyle = boxActive ? '#FFD700' : '#A08050';
-  ctx.font = 'bold 20px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('?', bx, by - 18);
-  ctx.shadowBlur = 0;
+  drawMysteryBoxVisual(bx, by, boxActive, pulse);
   if (boxActive && Math.abs(gs.player.x - _mysteryBoxX) < 150 && Math.abs(gs.player.y - BUS_ROOF_Y) < 50) {
     const weaponName = WEAPONS[_mysteryBoxWeaponIdx].name;
-    const floatY = by - 54 + Math.sin(Date.now() * 0.003) * 3;
+    const floatY = by - 70 + Math.sin(Date.now() * 0.003) * 3;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.beginPath(); ctx.roundRect(bx - 50, floatY - 8, 100, 16, 4); ctx.fill();
     ctx.fillStyle = '#FFD700';

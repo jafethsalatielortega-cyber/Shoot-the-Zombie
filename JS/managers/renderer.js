@@ -1,3 +1,85 @@
+// ─── DISEÑO COMPARTIDO DE LA MYSTERY BOX ───
+function drawMysteryBoxVisual(bx, by, boxActive, pulse) {
+  ctx.save();
+  if (boxActive) {
+    ctx.shadowColor = '#ffd84a';
+    ctx.shadowBlur = 22 * pulse;
+    ctx.strokeStyle = 'rgba(255,220,80,0.38)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(bx, by - 24, 39 + pulse * 3, 31 + pulse * 2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath(); ctx.ellipse(bx, by + 2, 35, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#24140d';
+  ctx.fillRect(bx - 28, by - 4, 7, 7);
+  ctx.fillRect(bx + 21, by - 4, 7, 7);
+
+  const bodyGradient = ctx.createLinearGradient(bx - 32, by - 42, bx + 32, by);
+  bodyGradient.addColorStop(0, '#805027');
+  bodyGradient.addColorStop(0.52, '#4d2c18');
+  bodyGradient.addColorStop(1, '#2a160f');
+  ctx.fillStyle = bodyGradient;
+  ctx.beginPath(); ctx.roundRect(bx - 32, by - 42, 64, 42, 4); ctx.fill();
+  ctx.strokeStyle = boxActive ? '#ffd34f' : '#a7783f';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const lidGradient = ctx.createLinearGradient(0, by - 54, 0, by - 39);
+  lidGradient.addColorStop(0, boxActive ? '#9a6a2c' : '#70451f');
+  lidGradient.addColorStop(1, '#382016');
+  ctx.fillStyle = lidGradient;
+  ctx.beginPath();
+  ctx.moveTo(bx - 34, by - 42);
+  ctx.lineTo(bx - 28, by - 53);
+  ctx.lineTo(bx + 28, by - 53);
+  ctx.lineTo(bx + 34, by - 42);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = boxActive ? '#ffe072' : '#9a6a35';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(20,8,4,0.5)';
+  ctx.lineWidth = 1;
+  for (let x = bx - 20; x <= bx + 20; x += 20) {
+    ctx.beginPath(); ctx.moveTo(x, by - 40); ctx.lineTo(x, by - 2); ctx.stroke();
+  }
+  ctx.fillStyle = boxActive ? '#c99a3d' : '#6f5335';
+  ctx.fillRect(bx - 32, by - 42, 64, 5);
+  ctx.fillRect(bx - 32, by - 7, 64, 6);
+  ctx.fillRect(bx - 29, by - 42, 5, 41);
+  ctx.fillRect(bx + 24, by - 42, 5, 41);
+
+  ctx.fillStyle = boxActive ? '#ffe890' : '#b09163';
+  for (const rx of [bx - 27, bx + 27]) {
+    for (const ry of [by - 38, by - 5]) {
+      ctx.beginPath(); ctx.arc(rx, ry, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  ctx.fillStyle = boxActive ? '#b88624' : '#5b4633';
+  ctx.beginPath(); ctx.roundRect(bx - 11, by - 34, 22, 29, 3); ctx.fill();
+  ctx.strokeStyle = boxActive ? '#ffe36e' : '#9b7a50';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.shadowColor = boxActive ? '#fff2a0' : 'transparent';
+  ctx.shadowBlur = boxActive ? 8 * pulse : 0;
+  ctx.fillStyle = boxActive ? '#fff08a' : '#c7a467';
+  ctx.font = 'bold 22px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('?', bx, by - 22);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#1b120d';
+  ctx.beginPath(); ctx.arc(bx, by - 10, 2.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(bx - 1, by - 10, 2, 5);
+  ctx.restore();
+}
+
 // ─── RENDERIZAR JUEGO ───
 // Dibuja todos los elementos del juego en el canvas: mapa, zombies, jugador, balas,
 // proyectiles, granadas, partículas y HUD. Aplica efectos de cámara como temblor y FOV.
@@ -36,36 +118,10 @@ function renderGame(gs) {
     const by = GROUND_Y;
     const pulse = Math.sin(Date.now() * 0.004) * 0.12 + 0.88;
     ctx.save();
-    if (boxActive) {
-      ctx.shadowColor = '#ffcc00';
-      ctx.shadowBlur = 18 * pulse;
-    }
-    ctx.fillStyle = '#5C3A1E';
-    ctx.beginPath(); ctx.roundRect(bx - 22, by - 38, 44, 38, 4); ctx.fill();
-    ctx.strokeStyle = boxActive ? '#C8943C' : '#8A6A3A';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(bx - 22, by - 38, 44, 38);
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 3; i++) {
-      const lx = bx - 14 + i * 14;
-      ctx.beginPath(); ctx.moveTo(lx, by - 36); ctx.lineTo(lx, by - 2); ctx.stroke();
-    }
-    ctx.fillStyle = boxActive ? '#C8943C' : '#7A5A2A';
-    ctx.fillRect(bx - 2, by - 20, 4, 16);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(bx - 1, by - 18, 2, 12);
-    ctx.shadowColor = boxActive ? '#ffcc00' : '#8A6A3A';
-    ctx.shadowBlur = boxActive ? 10 * pulse : 0;
-    ctx.fillStyle = boxActive ? '#FFD700' : '#A08050';
-    ctx.font = 'bold 20px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('?', bx, by - 18);
-    ctx.shadowBlur = 0;
+    drawMysteryBoxVisual(bx, by, boxActive, pulse);
     if (boxActive && Math.abs(p.x - _mysteryBoxX1) < 150 && Math.abs(p.y - GROUND_Y) < 50) {
       const weaponName = WEAPONS[_mysteryBoxWeaponIdx].name;
-      const floatY = by - 54 + Math.sin(Date.now() * 0.003) * 3;
+      const floatY = by - 70 + Math.sin(Date.now() * 0.003) * 3;
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
       ctx.beginPath(); ctx.roundRect(bx - 50, floatY - 8, 100, 16, 4); ctx.fill();
       ctx.fillStyle = '#FFD700';

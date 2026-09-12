@@ -134,7 +134,9 @@ function loop(timestamp) {
       // ─── PAUSA CON CLIC EN BOTÓN ───
       if ((mouse.down || pointerPressed) && !gs._pauseClickBuf && gs._pauseBtn) {
         const b = gs._pauseBtn;
-        if (mouse.x >= b.x && mouse.x <= b.x + b.w && mouse.y >= b.y && mouse.y <= b.y + b.h) {
+        const pauseTouchPadding = showTouchControls ? 10 : 0;
+        if (mouse.x >= b.x - pauseTouchPadding && mouse.x <= b.x + b.w + pauseTouchPadding &&
+            mouse.y >= b.y - pauseTouchPadding && mouse.y <= b.y + b.h + pauseTouchPadding) {
           gs._pauseClickBuf = true;
           gs.paused = !gs.paused;
           if (!gs.paused) { gs._layoutEditorOpen = false; gs._pauseOptionsOpen = false; }

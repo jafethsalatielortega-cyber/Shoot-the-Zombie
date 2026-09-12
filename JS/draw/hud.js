@@ -30,24 +30,17 @@ function drawHUD(gs) {
   ctx.font = 'bold 10px monospace';
   ctx.fillText('HP', 140, 25);
 
-  // ─── BARRA DE STAMINA ───
-  ctx.fillStyle = '#222';
-  ctx.fillRect(14, 30, 120, 10);
-  const stamRatio = p.stamina / p.maxStamina;
-  const stamColor = stamRatio > 0.5 ? '#30c0e0' : stamRatio > 0.25 ? '#e0a030' : '#e03030';
-  ctx.fillStyle = stamColor;
-  ctx.fillRect(15, 31, 118 * stamRatio, 8);
-  ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
-  ctx.strokeRect(14, 30, 120, 10);
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 8px monospace';
-  ctx.fillText('STAMINA', 16, 39);
-
   // ─── PUNTUACIÓN ───
-  // Muestra la puntuación actual centrada en la pantalla, con formato de 6 dígitos (ej. 000500)
+  // Bloque independiente debajo de la vida para no mezclarlo con la oleada.
+  ctx.fillStyle = 'rgba(0,0,0,0.62)';
+  ctx.fillRect(14, 34, 158, 23);
+  ctx.strokeStyle = 'rgba(0,255,136,0.45)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(14, 34, 158, 23);
+  ctx.textAlign = 'left';
   ctx.fillStyle = '#00ff88';
   ctx.font = 'bold 14px monospace';
-  ctx.fillText('SCORE: ' + String(gs.score).padStart(6,'0'), LOGICAL_W / 2, 50);
+  ctx.fillText('SCORE: ' + String(gs.score).padStart(6,'0'), 22, 51);
 
   // ─── OLEADA (parpadea en rojo si es pesadilla, oleada >= 10) ───
   // Cambia la alineación del texto a centrado para los elementos del medio
@@ -247,7 +240,7 @@ function drawHUD(gs) {
   // ─── BOTÓN DE PAUSA ───
   // Define la posición y tamaño del botón de pausa en la esquina superior derecha
   const pauseBtn = showTouchControls
-    ? { x: LOGICAL_W - 58, y: 10, w: 48, h: 36 }
+    ? { x: LOGICAL_W - 68, y: 10, w: 58, h: 44 }
     : { x: LOGICAL_W - 42, y: 10, w: 34, h: 26 };
   // Cambia el color si el juego está pausado (naranja) o no (gris semitransparente)
   ctx.fillStyle = gs.paused ? '#ffb833' : 'rgba(255,255,255,0.18)';
