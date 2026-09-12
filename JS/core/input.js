@@ -35,6 +35,18 @@ const touches = {};
 let aimPointer = -1;
 let aimX = LOGICAL_W / 2;
 let aimY = LOGICAL_H / 2;
+// FIRE funciona como stick derecho: el origen es el punto exacto donde el
+// usuario apoya el dedo, evitando invertir la dirección por tocar un borde.
+let fireAimPointer = -1;
+let fireAimOriginX = 0;
+let fireAimOriginY = 0;
+let fireAimDX = 0;
+let fireAimDY = 0;
+let fireAimHasDirection = false;
+let fireAimPressTime = 0;
+const FIRE_AIM_DEADZONE = 7;
+const FIRE_AIM_CLAMP = 58;
+const FIRE_AIM_ACQUIRE_MS = 45;
 
 // ─── FUNCIONES AUXILIARES ───
 
@@ -263,6 +275,13 @@ function handlePointerDown(e) {
   if (dist(p.x, p.y, BTN_SHOOT_X, BTN_SHOOT_Y) < BTN_SHOOT_R + 16) {
     touches[id]._btn = 'shoot';
     touchShooting = true;
+    fireAimPointer = id;
+    fireAimOriginX = p.x;
+    fireAimOriginY = p.y;
+    fireAimDX = 0;
+    fireAimDY = 0;
+    fireAimHasDirection = false;
+    fireAimPressTime = performance.now();
     return;
   }
 
@@ -342,6 +361,24 @@ function handlePointerMove(e) {
   const prev = touches[id] || {};
   touches[id] = { x: p.x, y: p.y, active: true, _btn: prev._btn };
 
+  // Arrastrar FIRE dirige la mira. Se calcula desde el punto inicial del
+  // propio dedo, no desde el centro gráfico del botón.
+  if (id === fireAimPointer && prev._btn === 'shoot') {
+    const dx = p.x - fireAimOriginX;
+    const dy = p.y - fireAimOriginY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    if (length > FIRE_AIM_DEADZONE) {
+      fireAimDX = length > FIRE_AIM_CLAMP ? dx / length * FIRE_AIM_CLAMP : dx;
+      fireAimDY = length > FIRE_AIM_CLAMP ? dy / length * FIRE_AIM_CLAMP : dy;
+      fireAimHasDirection = true;
+    } else {
+      fireAimDX = 0;
+      fireAimDY = 0;
+      fireAimHasDirection = false;
+    }
+    return;
+  }
+
   // Arrastre del joystick
   if (id === joystickPointer && joystickActive) {
     const dx = p.x - joystickOriginX;
@@ -371,6 +408,10 @@ function handlePointerUp(e) {
   if (touch) {
     if (touch._btn === 'shoot') {
       touchShooting = false;
+      fireAimPointer = -1;
+      fireAimDX = 0;
+      fireAimDY = 0;
+      fireAimHasDirection = false;
     }
     if (touch._btn === 'jump') {
       keys['Space'] = false;

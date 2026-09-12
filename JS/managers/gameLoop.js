@@ -4,15 +4,10 @@ let _mysteryBoxWeaponIdx = -1;
 let _mysteryBoxHoldTime = 0;
 const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 
-// Puntería táctil estabilizada: zona muerta, respuesta progresiva y límite de
-// velocidad angular. Un cambio claro de izquierda/derecha se aplica de
-// inmediato para que nunca dispare hacia el lado opuesto.
-const TOUCH_AIM_DEADZONE = 14;
-const TOUCH_AIM_MIN_DISTANCE = 135;
-const TOUCH_AIM_MAX_DISTANCE = 360;
-const TOUCH_AIM_ANGULAR_SPEED = 11;
-let touchAimAngle = 0;
-let touchAimEngaged = false;
+// Recorrido visual del stick de FIRE. La dirección conserva exactamente el
+// ángulo del dedo y la distancia crece de forma progresiva.
+const FIRE_AIM_MIN_DISTANCE = 145;
+const FIRE_AIM_MAX_DISTANCE = 390;
 
 // ─── ACTUALIZAR JUEGO ───
 // Función principal que se ejecuta cada frame mientras el estado es 'playing'.
@@ -32,48 +27,24 @@ let touchAimEngaged = false;
 function updatePlaying(gs, dt) {
   const p = gs.player;
 
-  // ─── [TOUCH] JOYSTICK AIM ───
-  // En teléfonos y tablets el vector visible del joystick es la fuente
-  // principal y única mientras está activo: derecha = vx positiva,
-  // izquierda = vx negativa. FIRE sólo dispara y nunca cambia la dirección.
+  // ─── [TOUCH] FIRE AIM ───
+  // El joystick izquierdo sólo mueve. Mantener y arrastrar FIRE controla la
+  // mira con el pulgar derecho, como un segundo stick virtual.
   if (showTouchControls && p) {
     const playerScreenX = p.x - gs.camX;
     const playerScreenY = p.y - 20 + (gs.busCamY || 0);
-    const joystickLength = Math.sqrt(joystickKnobX * joystickKnobX + joystickKnobY * joystickKnobY);
-    if (joystickActive && joystickLength > TOUCH_AIM_DEADZONE) {
-      const targetAngle = Math.atan2(joystickKnobY, joystickKnobX);
-      if (!touchAimEngaged) {
-        touchAimAngle = targetAngle;
-      } else {
-        const currentSide = Math.sign(Math.cos(touchAimAngle));
-        const targetSide = Math.sign(Math.cos(targetAngle));
-        const strongHorizontalInput = Math.abs(joystickKnobX) > TOUCH_AIM_DEADZONE;
-        if (strongHorizontalInput && currentSide !== targetSide) {
-          // Los cambios de lado son instantáneos: jamás conserva el lado viejo.
-          touchAimAngle = targetAngle;
-        } else {
-          const angleDifference = Math.atan2(
-            Math.sin(targetAngle - touchAimAngle),
-            Math.cos(targetAngle - touchAimAngle)
-          );
-          const maxAngleStep = TOUCH_AIM_ANGULAR_SPEED * dt;
-          touchAimAngle += Math.max(-maxAngleStep, Math.min(maxAngleStep, angleDifference));
-        }
-      }
-      touchAimEngaged = true;
-      const travel = Math.min(1, Math.max(0,
-        (joystickLength - TOUCH_AIM_DEADZONE) / (JOYSTICK_CLAMP - TOUCH_AIM_DEADZONE)
-      ));
-      const aimDistance = TOUCH_AIM_MIN_DISTANCE +
-        (TOUCH_AIM_MAX_DISTANCE - TOUCH_AIM_MIN_DISTANCE) * Math.pow(travel, 1.35);
-      mouse.x = playerScreenX + Math.cos(touchAimAngle) * aimDistance;
-      mouse.y = playerScreenY + Math.sin(touchAimAngle) * aimDistance;
+    const fireAimLength = Math.sqrt(fireAimDX * fireAimDX + fireAimDY * fireAimDY);
+    if (touchShooting && fireAimHasDirection && fireAimLength > 0) {
+      const fireAimAngle = Math.atan2(fireAimDY, fireAimDX);
+      const travel = Math.min(1, fireAimLength / FIRE_AIM_CLAMP);
+      const aimDistance = FIRE_AIM_MIN_DISTANCE +
+        (FIRE_AIM_MAX_DISTANCE - FIRE_AIM_MIN_DISTANCE) * Math.pow(travel, 1.25);
+      mouse.x = playerScreenX + Math.cos(fireAimAngle) * aimDistance;
+      mouse.y = playerScreenY + Math.sin(fireAimAngle) * aimDistance;
     } else if (aimPointer >= 0) {
-      touchAimEngaged = false;
       mouse.x = aimX;
       mouse.y = aimY;
     } else {
-      touchAimEngaged = false;
       // Por defecto: apunta hacia donde mira el jugador
       mouse.x = playerScreenX + p.dir * 100;
       mouse.y = playerScreenY;
@@ -237,7 +208,15 @@ function updatePlaying(gs, dt) {
   // ─── [NEW] TOUCH SHOOTING ───
   // El botón táctil "FIRE" se integra en la misma señal mouse.down
   // para que el sistema de disparo existente funcione sin cambios.
-  if (touchShooting) { mouse.down = true; }
+  // En táctil espera unos milisegundos para que FIRE reciba el primer
+  // movimiento de apuntado. Al detectar dirección dispara inmediatamente.
+  // Esto evita que las armas semiautomáticas gasten su único disparo antes
+  // de conocer hacia dónde arrastró el usuario.
+  const touchFireReady = touchShooting && (
+    fireAimHasDirection || performance.now() - fireAimPressTime >= FIRE_AIM_ACQUIRE_MS
+  );
+  if (touchFireReady) { mouse.down = true; }
+  else if (touchShooting) { mouse.down = false; }
   else if (!mouse.down) { /* touch release handled by pointerup */ }
   // Si touchShooting está false pero mouse.down quedó true del toque anterior,
   // se limpia para evitar disparo fantasma.
