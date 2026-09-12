@@ -44,9 +44,24 @@ let fireAimDX = 0;
 let fireAimDY = 0;
 let fireAimHasDirection = false;
 let fireAimPressTime = 0;
-const FIRE_AIM_DEADZONE = 7;
-const FIRE_AIM_CLAMP = 58;
+const FIRE_AIM_DEADZONE = 12;
+const FIRE_AIM_CLAMP = 76;
 const FIRE_AIM_ACQUIRE_MS = 45;
+
+// Devuelve un ángulo estable desde FIRE. Las direcciones horizontal, vertical
+// y diagonal tienen una pequeña zona magnética para evitar temblores, pero
+// nunca cambian el signo elegido por el dedo.
+function getFireAimAngle() {
+  if (!fireAimHasDirection) return null;
+  const rawAngle = Math.atan2(fireAimDY, fireAimDX);
+  const step = Math.PI / 4;
+  const snappedAngle = Math.round(rawAngle / step) * step;
+  const difference = Math.atan2(
+    Math.sin(rawAngle - snappedAngle),
+    Math.cos(rawAngle - snappedAngle)
+  );
+  return Math.abs(difference) <= Math.PI / 12 ? snappedAngle : rawAngle;
+}
 
 // ─── FUNCIONES AUXILIARES ───
 
@@ -129,18 +144,18 @@ let JOYSTICK_CENTER_X = 110;
 let JOYSTICK_CENTER_Y = 380;
 let JOYSTICK_OUTER_R = 76;
 let JOYSTICK_CLAMP = 62;
-let BTN_SHOOT_X = 1180, BTN_SHOOT_Y = 395, BTN_SHOOT_R = 52;
+let BTN_SHOOT_X = 1150, BTN_SHOOT_Y = 390, BTN_SHOOT_R = 56;
 let BTN_JUMP_X = 1080, BTN_JUMP_Y = 300, BTN_JUMP_R = 42;
 let BTN_SPRINT_X = 970, BTN_SPRINT_Y = 420, BTN_SPRINT_R = 34;
 let BTN_SWITCH_X = 1240, BTN_SWITCH_Y = 270, BTN_SWITCH_R = 30;
-let BTN_RELOAD_X = 1080, BTN_RELOAD_Y = 430, BTN_RELOAD_R = 34;
+let BTN_RELOAD_X = 1060, BTN_RELOAD_Y = 435, BTN_RELOAD_R = 34;
 let BTN_KNIFE_X = 1155, BTN_KNIFE_Y = 245, BTN_KNIFE_R = 34;
 let BTN_GRENADE_X = 970, BTN_GRENADE_Y = 330, BTN_GRENADE_R = 32;
 let BTN_BOARD_X = 1010, BTN_BOARD_Y = 235, BTN_BOARD_R = 32;
 let AIM_ZONE_X1 = 210, AIM_ZONE_X2 = 900;
 
 // ─── [NEW] TOUCH LAYOUT PERSISTENCE ───
-const TOUCH_LAYOUT_VERSION = 2;
+const TOUCH_LAYOUT_VERSION = 3;
 function saveTouchLayout() {
   try { localStorage.setItem('zombies_touch_layout', JSON.stringify({
     layoutVersion: TOUCH_LAYOUT_VERSION,
@@ -201,11 +216,11 @@ function loadTouchLayout() {
 }
 function resetTouchLayout() {
   JOYSTICK_CENTER_X = 110; JOYSTICK_CENTER_Y = 380; JOYSTICK_OUTER_R = 76; JOYSTICK_CLAMP = 62;
-  BTN_SHOOT_X = 1180; BTN_SHOOT_Y = 395; BTN_SHOOT_R = 52;
+  BTN_SHOOT_X = 1150; BTN_SHOOT_Y = 390; BTN_SHOOT_R = 56;
   BTN_JUMP_X = 1080; BTN_JUMP_Y = 300; BTN_JUMP_R = 42;
   BTN_SPRINT_X = 970; BTN_SPRINT_Y = 420; BTN_SPRINT_R = 34;
   BTN_SWITCH_X = 1240; BTN_SWITCH_Y = 270; BTN_SWITCH_R = 30;
-  BTN_RELOAD_X = 1080; BTN_RELOAD_Y = 430; BTN_RELOAD_R = 34;
+  BTN_RELOAD_X = 1060; BTN_RELOAD_Y = 435; BTN_RELOAD_R = 34;
   BTN_KNIFE_X = 1155; BTN_KNIFE_Y = 245; BTN_KNIFE_R = 34;
   BTN_GRENADE_X = 970; BTN_GRENADE_Y = 330; BTN_GRENADE_R = 32;
   BTN_BOARD_X = 1010; BTN_BOARD_Y = 235; BTN_BOARD_R = 32;

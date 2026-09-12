@@ -6,8 +6,8 @@ const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 
 // Recorrido visual del stick de FIRE. La dirección conserva exactamente el
 // ángulo del dedo y la distancia crece de forma progresiva.
-const FIRE_AIM_MIN_DISTANCE = 145;
-const FIRE_AIM_MAX_DISTANCE = 390;
+const FIRE_AIM_MIN_DISTANCE = 150;
+const FIRE_AIM_MAX_DISTANCE = 340;
 
 // ─── ACTUALIZAR JUEGO ───
 // Función principal que se ejecuta cada frame mientras el estado es 'playing'.
@@ -35,7 +35,7 @@ function updatePlaying(gs, dt) {
     const playerScreenY = p.y - 20 + (gs.busCamY || 0);
     const fireAimLength = Math.sqrt(fireAimDX * fireAimDX + fireAimDY * fireAimDY);
     if (touchShooting && fireAimHasDirection && fireAimLength > 0) {
-      const fireAimAngle = Math.atan2(fireAimDY, fireAimDX);
+      const fireAimAngle = getFireAimAngle();
       const travel = Math.min(1, fireAimLength / FIRE_AIM_CLAMP);
       const aimDistance = FIRE_AIM_MIN_DISTANCE +
         (FIRE_AIM_MAX_DISTANCE - FIRE_AIM_MIN_DISTANCE) * Math.pow(travel, 1.25);
@@ -866,16 +866,22 @@ function tryShoot(gs) {
   p.fireCooldown = p.weapon.fireRate * (p.doubleShotTimer > 0 ? 0.5 : 1);
 
   // ─── DIRECCIÓN DEL DISPARO ───
-  // Convierte la posición del mouse a coordenadas del mundo (sumando el desplazamiento de cámara)
-  const worldMouseX = mouse.x + gs.camX;
-  const worldMouseY = mouse.y - (gs.busCamY || 0);
-  const aimDeltaX = worldMouseX - p.x;
-  const aimDeltaY = worldMouseY - (p.y - 20);
-  // Sprite, fogonazo y proyectil comparten exactamente el mismo vector.
-  // Si el objetivo coincide con el jugador, conserva la dirección actual.
-  const baseAngle = Math.abs(aimDeltaX) + Math.abs(aimDeltaY) > 0.001
-    ? Math.atan2(aimDeltaY, aimDeltaX)
-    : (p.dir < 0 ? Math.PI : 0);
+  // En táctil toma directamente el vector del dedo sobre FIRE. No pasa por
+  // coordenadas de mouse, cámara ni orientación del personaje, eliminando
+  // cualquier posibilidad de invertir izquierda/derecha o arriba/abajo.
+  let baseAngle;
+  const directTouchAngle = showTouchControls && touchShooting ? getFireAimAngle() : null;
+  if (directTouchAngle !== null) {
+    baseAngle = directTouchAngle;
+  } else {
+    const worldMouseX = mouse.x + gs.camX;
+    const worldMouseY = mouse.y - (gs.busCamY || 0);
+    const aimDeltaX = worldMouseX - p.x;
+    const aimDeltaY = worldMouseY - (p.y - 20);
+    baseAngle = Math.abs(aimDeltaX) + Math.abs(aimDeltaY) > 0.001
+      ? Math.atan2(aimDeltaY, aimDeltaX)
+      : (p.dir < 0 ? Math.PI : 0);
+  }
   const shotDirectionX = Math.cos(baseAngle);
   if (Math.abs(shotDirectionX) > 0.001) p.dir = shotDirectionX > 0 ? 1 : -1;
   const pellets = p.weapon.pellets || 1;                  // Número de proyectiles por disparo (escopeta tiene varios)
