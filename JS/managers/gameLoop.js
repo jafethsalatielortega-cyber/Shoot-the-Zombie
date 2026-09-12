@@ -4,6 +4,12 @@ let _mysteryBoxWeaponIdx = -1;
 let _mysteryBoxHoldTime = 0;
 const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 
+// Sensibilidad de puntería táctil. El movimiento es proporcional al recorrido
+// real del joystick para evitar que un desplazamiento mínimo mande la mira al
+// extremo de la pantalla.
+const TOUCH_AIM_DEADZONE = 12;
+const TOUCH_AIM_SENSITIVITY = 7;
+
 // ─── ACTUALIZAR JUEGO ───
 // Función principal que se ejecuta cada frame mientras el estado es 'playing'.
 // Orquesta todos los subsistemas del juego en el orden correcto:
@@ -30,9 +36,9 @@ function updatePlaying(gs, dt) {
     const playerScreenX = p.x - gs.camX;
     const playerScreenY = p.y - 20 + (gs.busCamY || 0);
     const joystickLength = Math.sqrt(joystickKnobX * joystickKnobX + joystickKnobY * joystickKnobY);
-    if (joystickActive && joystickLength > 8) {
-      mouse.x = playerScreenX + joystickKnobX / joystickLength * 600;
-      mouse.y = playerScreenY + joystickKnobY / joystickLength * 600;
+    if (joystickActive && joystickLength > TOUCH_AIM_DEADZONE) {
+      mouse.x = playerScreenX + joystickKnobX * TOUCH_AIM_SENSITIVITY;
+      mouse.y = playerScreenY + joystickKnobY * TOUCH_AIM_SENSITIVITY;
     } else if (aimPointer >= 0) {
       mouse.x = aimX;
       mouse.y = aimY;
