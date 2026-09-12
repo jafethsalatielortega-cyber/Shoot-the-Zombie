@@ -33,9 +33,6 @@ const touches = {};
 let aimPointer = -1;
 let aimX = LOGICAL_W / 2;
 let aimY = LOGICAL_H / 2;
-let fireAimPointer = -1;
-let fireAimDX = 0;
-let fireAimDY = 0;
 
 // ─── FUNCIONES AUXILIARES ───
 
@@ -79,8 +76,9 @@ document.addEventListener('mousemove', e => {
 // Al hacer clic en el canvas: marca el botón como presionado, solicita pantalla completa e inicializa el audio si es necesario
 canvas.addEventListener('mousedown', e => {
   mouse.down = true;
-  requestFullscreenAndLock();
+  // Desbloquea el audio antes de consumir el gesto con Fullscreen API.
   if (!audioInit) initAudio();
+  else requestFullscreenAndLock();
 });
 // Al soltar el clic: marca el botón como no presionado
 canvas.addEventListener('mouseup', () => { mouse.down = false; });
@@ -229,8 +227,9 @@ function handlePointerDown(e) {
   touches[id] = { x: p.x, y: p.y, active: true };
   try { canvas.setPointerCapture(id); } catch (_) {}
 
-  requestFullscreenAndLock();
+  // En móviles el mismo gesto debe desbloquear primero Web Audio.
   if (!audioInit) initAudio();
+  else requestFullscreenAndLock();
   updateDeviceFlags();
   pointerPressed = true;
   // Actualiza mouse.x/y para que los botones del menú (pausa, etc.)
@@ -255,9 +254,6 @@ function handlePointerDown(e) {
   if (dist(p.x, p.y, BTN_SHOOT_X, BTN_SHOOT_Y) < BTN_SHOOT_R + 16) {
     touches[id]._btn = 'shoot';
     touchShooting = true;
-    fireAimPointer = id;
-    fireAimDX = 0;
-    fireAimDY = 0;
     return;
   }
 
@@ -337,18 +333,6 @@ function handlePointerMove(e) {
   const prev = touches[id] || {};
   touches[id] = { x: p.x, y: p.y, active: true, _btn: prev._btn };
 
-  // El botón FIRE también funciona como stick de apuntado: mantener para
-  // disparar y arrastrar el mismo pulgar para dirigir el arma.
-  if (id === fireAimPointer && prev._btn === 'shoot') {
-    const dx = p.x - BTN_SHOOT_X;
-    const dy = p.y - BTN_SHOOT_Y;
-    const length = Math.sqrt(dx * dx + dy * dy);
-    const maxTravel = 58;
-    fireAimDX = length > maxTravel ? dx / length * maxTravel : dx;
-    fireAimDY = length > maxTravel ? dy / length * maxTravel : dy;
-    return;
-  }
-
   // Arrastre del joystick
   if (id === joystickPointer && joystickActive) {
     const dx = p.x - JOYSTICK_CENTER_X;
@@ -378,9 +362,6 @@ function handlePointerUp(e) {
   if (touch) {
     if (touch._btn === 'shoot') {
       touchShooting = false;
-      fireAimPointer = -1;
-      fireAimDX = 0;
-      fireAimDY = 0;
     }
     if (touch._btn === 'jump') {
       keys['Space'] = false;

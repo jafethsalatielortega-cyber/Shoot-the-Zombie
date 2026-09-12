@@ -206,19 +206,6 @@ function drawTouchGamepad(gs) {
   ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'center';
   ctx.fillText('FIRE', BTN_SHOOT_X, BTN_SHOOT_Y + 4);
-  if (touchShooting) {
-    ctx.beginPath();
-    ctx.moveTo(BTN_SHOOT_X, BTN_SHOOT_Y);
-    ctx.lineTo(BTN_SHOOT_X + fireAimDX, BTN_SHOOT_Y + fireAimDY);
-    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(BTN_SHOOT_X + fireAimDX, BTN_SHOOT_Y + fireAimDY, 9, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.fill();
-  }
-
   // ─── BOTÓN JUMP ───
   ctx.beginPath();
   ctx.arc(BTN_JUMP_X, BTN_JUMP_Y, BTN_JUMP_R, 0, Math.PI * 2);

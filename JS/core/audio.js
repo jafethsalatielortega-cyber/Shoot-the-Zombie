@@ -191,8 +191,16 @@ function ensureCtx() {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     } catch(e) { return false; }
   }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  return audioCtx.state === 'running';
+  if (audioCtx.state === 'closed') return false;
+  if (audioCtx.state === 'suspended') {
+    // No descarta el efecto mientras resume: los nodos creados quedan
+    // programados y sonarán al activarse el contexto en el mismo gesto.
+    try {
+      const resumeResult = audioCtx.resume();
+      if (resumeResult && typeof resumeResult.catch === 'function') resumeResult.catch(function() {});
+    } catch(e) {}
+  }
+  return true;
 }
 
 // ─── GENERACIÓN DE SONIDOS POR SÍNTESIS ───

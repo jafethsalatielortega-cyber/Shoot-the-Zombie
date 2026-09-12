@@ -22,16 +22,17 @@ const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 function updatePlaying(gs, dt) {
   const p = gs.player;
 
-  // ─── [TOUCH] AIM ───
-  // El pulgar izquierdo queda dedicado al movimiento. El derecho puede
-  // mantener FIRE y arrastrar para apuntar, o usar la zona central.
+  // ─── [TOUCH] JOYSTICK AIM ───
+  // En teléfonos y tablets el vector visible del joystick es la fuente
+  // principal y única mientras está activo: derecha = vx positiva,
+  // izquierda = vx negativa. FIRE sólo dispara y nunca cambia la dirección.
   if (showTouchControls && p) {
     const playerScreenX = p.x - gs.camX;
     const playerScreenY = p.y - 20 + (gs.busCamY || 0);
-    const fireAimLength = Math.sqrt(fireAimDX * fireAimDX + fireAimDY * fireAimDY);
-    if (touchShooting && fireAimLength > 8) {
-      mouse.x = playerScreenX + fireAimDX / fireAimLength * 600;
-      mouse.y = playerScreenY + fireAimDY / fireAimLength * 600;
+    const joystickLength = Math.sqrt(joystickKnobX * joystickKnobX + joystickKnobY * joystickKnobY);
+    if (joystickActive && joystickLength > 8) {
+      mouse.x = playerScreenX + joystickKnobX / joystickLength * 600;
+      mouse.y = playerScreenY + joystickKnobY / joystickLength * 600;
     } else if (aimPointer >= 0) {
       mouse.x = aimX;
       mouse.y = aimY;
