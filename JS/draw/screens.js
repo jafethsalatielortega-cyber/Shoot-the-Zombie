@@ -330,9 +330,137 @@ function drawBossAnnouncement(gs) {
 }
 
 // ─── SUPERPOSICIÓN DE PAUSA ───
-// Muestra el menú de pausa con opciones: Reanudar, Opciones (volumen) y Volver al Menú
+// Muestra el menú de pausa con opciones: Continuar, Reiniciar partida,
+// Opciones (volumen) y Salir al menú.
 // Los botones se detectan por clic del mouse; las opciones de volumen se expanden al
 // hacer clic en "OPCIONES"
+function drawMobilePauseMenu(gs) {
+  const optionsOpen = gs._pauseOptionsOpen === true;
+  const gapX = 24;
+  const colW = 470;
+  const leftX = (LOGICAL_W - colW * 2 - gapX) / 2;
+  const rightX = leftX + colW + gapX;
+
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = '#ffb833';
+  ctx.font = 'bold 42px monospace';
+  ctx.fillText('PAUSED', LOGICAL_W / 2, 46);
+  ctx.shadowBlur = 0;
+
+  function drawTouchPauseButton(bounds, label, fill, stroke) {
+    const hovered = mouse.x > bounds.x && mouse.x < bounds.x + bounds.w &&
+      mouse.y > bounds.y && mouse.y < bounds.y + bounds.h;
+    ctx.fillStyle = hovered ? stroke : fill;
+    ctx.beginPath(); ctx.roundRect(bounds.x, bounds.y, bounds.w, bounds.h, 12); ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = hovered ? 4 : 3;
+    ctx.beginPath(); ctx.roundRect(bounds.x, bounds.y, bounds.w, bounds.h, 12); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 25px monospace';
+    ctx.fillText(label, bounds.x + bounds.w / 2, bounds.y + bounds.h / 2 + 9);
+  }
+
+  let resumeBtn;
+  let restartBtn;
+  let optionsBtn;
+  let menuBtn;
+
+  if (!optionsOpen) {
+    const buttonH = 92;
+    const row1Y = 92;
+    const row2Y = row1Y + buttonH + 18;
+    resumeBtn = { x: leftX, y: row1Y, w: colW, h: buttonH };
+    restartBtn = { x: rightX, y: row1Y, w: colW, h: buttonH };
+    optionsBtn = { x: leftX, y: row2Y, w: colW, h: buttonH };
+    menuBtn = { x: rightX, y: row2Y, w: colW, h: buttonH };
+
+    drawTouchPauseButton(resumeBtn, '▶  CONTINUAR', '#3a2200', '#ffb833');
+    drawTouchPauseButton(restartBtn, '↻  REINICIAR PARTIDA', '#3b2614', '#ff8a3d');
+    drawTouchPauseButton(optionsBtn, '🔊  OPCIONES', '#1a2a1a', '#4aff8a');
+    drawTouchPauseButton(menuBtn, '🏠  SALIR AL MENÚ', '#3a1a1a', '#ff4a4a');
+  } else {
+    const topH = 88;
+    resumeBtn = { x: leftX, y: 62, w: colW, h: topH };
+    restartBtn = { x: rightX, y: 62, w: colW, h: topH };
+    optionsBtn = { x: leftX, y: 160, w: colW * 2 + gapX, h: 210 };
+    menuBtn = { x: leftX, y: 380, w: colW * 2 + gapX, h: 88 };
+
+    drawTouchPauseButton(resumeBtn, '▶  CONTINUAR', '#3a2200', '#ffb833');
+    drawTouchPauseButton(restartBtn, '↻  REINICIAR PARTIDA', '#3b2614', '#ff8a3d');
+
+    ctx.fillStyle = '#14291d';
+    ctx.beginPath(); ctx.roundRect(optionsBtn.x, optionsBtn.y, optionsBtn.w, optionsBtn.h, 12); ctx.fill();
+    ctx.strokeStyle = '#4aff8a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.roundRect(optionsBtn.x, optionsBtn.y, optionsBtn.w, optionsBtn.h, 12); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText('🔊  OPCIONES', LOGICAL_W / 2, optionsBtn.y + 32);
+
+    const mVol = typeof masterVolume !== 'undefined' ? masterVolume : 1;
+    const sVol = typeof sfxVolume !== 'undefined' ? sfxVolume : 1;
+    function drawTouchVolume(label, vol, rowY) {
+      const labelX = optionsBtn.x + 38;
+      const minus = { x: optionsBtn.x + 185, y: rowY, w: 68, h: 44 };
+      const barX = minus.x + minus.w + 22;
+      const barW = 430;
+      const plus = { x: barX + barW + 22, y: rowY, w: 68, h: 44 };
+
+      ctx.fillStyle = '#d8d8d8';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, labelX, rowY + 29);
+
+      ctx.fillStyle = '#303030';
+      ctx.beginPath(); ctx.roundRect(barX, rowY + 12, barW, 20, 10); ctx.fill();
+      ctx.fillStyle = '#4aff8a';
+      ctx.beginPath(); ctx.roundRect(barX, rowY + 12, barW * vol, 20, 10); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(Math.round(vol * 100) + '%', barX + barW / 2, rowY + 29);
+
+      for (const button of [minus, plus]) {
+        ctx.fillStyle = '#343434';
+        ctx.beginPath(); ctx.roundRect(button.x, button.y, button.w, button.h, 8); ctx.fill();
+        ctx.strokeStyle = '#777'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(button.x, button.y, button.w, button.h, 8); ctx.stroke();
+      }
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 26px monospace';
+      ctx.fillText('−', minus.x + minus.w / 2, minus.y + 31);
+      ctx.fillText('+', plus.x + plus.w / 2, plus.y + 31);
+      return { minus, plus };
+    }
+
+    const musicBtns = drawTouchVolume('MUSIC', mVol, optionsBtn.y + 42);
+    const sfxBtns = drawTouchVolume('SFX', sVol, optionsBtn.y + 94);
+    gs._pauseVolMinus = musicBtns.minus;
+    gs._pauseVolPlus = musicBtns.plus;
+    gs._pauseSfxMinus = sfxBtns.minus;
+    gs._pauseSfxPlus = sfxBtns.plus;
+
+    const layoutBtn = { x: optionsBtn.x + 185, y: optionsBtn.y + 150, w: 594, h: 48 };
+    ctx.fillStyle = '#1a2a3a';
+    ctx.beginPath(); ctx.roundRect(layoutBtn.x, layoutBtn.y, layoutBtn.w, layoutBtn.h, 8); ctx.fill();
+    ctx.strokeStyle = '#4a8aff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(layoutBtn.x, layoutBtn.y, layoutBtn.w, layoutBtn.h, 8); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText('🎮  BUTTON LAYOUT', LOGICAL_W / 2, layoutBtn.y + 31);
+    gs._pauseLayoutBtn = layoutBtn;
+
+    drawTouchPauseButton(menuBtn, '🏠  SALIR AL MENÚ', '#3a1a1a', '#ff4a4a');
+  }
+
+  gs._pauseBtns = {
+    resume: resumeBtn,
+    restart: restartBtn,
+    options: optionsBtn,
+    menu: menuBtn
+  };
+}
+
 function drawPauseOverlay(gs) {
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -340,40 +468,55 @@ function drawPauseOverlay(gs) {
 
   ctx.textAlign = 'center';
 
+  if (typeof showTouchControls !== 'undefined' && showTouchControls) {
+    drawMobilePauseMenu(gs);
+    ctx.restore();
+    ctx.textAlign = 'left';
+    return;
+  }
+
   // Título PAUSED
   ctx.shadowColor = '#000';
   ctx.shadowBlur = 20;
   ctx.fillStyle = '#ffb833';
-  ctx.font = 'bold 52px monospace';
-  ctx.fillText('PAUSED', LOGICAL_W / 2, 110);
+  ctx.font = 'bold 44px monospace';
+  ctx.fillText('PAUSED', LOGICAL_W / 2, 75);
   ctx.shadowBlur = 0;
 
-  const bw = 280, bh = 44;
+  const bw = 340, bh = 52, gap = 12;
   const bx = LOGICAL_W / 2 - bw / 2;
   const optionsOpen = gs._pauseOptionsOpen === true;
 
-  // ─── BOTÓN: REANUDAR ───
-  const by1 = 160;
-  const hov1 = mouse.x > bx && mouse.x < bx+bw && mouse.y > by1 && mouse.y < by1+bh;
-  ctx.fillStyle = hov1 ? '#6a4000' : '#3a2200';
-  ctx.beginPath(); ctx.roundRect(bx, by1, bw, bh, 6); ctx.fill();
-  ctx.strokeStyle = '#ffb833'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.roundRect(bx, by1, bw, bh, 6); ctx.stroke();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 17px monospace';
-  ctx.fillText('▶  REANUDAR', LOGICAL_W / 2, by1 + 29);
+  function drawPauseButton(y, label, fill, hoverFill, stroke) {
+    const hovered = mouse.x > bx && mouse.x < bx + bw && mouse.y > y && mouse.y < y + bh;
+    ctx.fillStyle = hovered ? hoverFill : fill;
+    ctx.beginPath(); ctx.roundRect(bx, y, bw, bh, 8); ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = hovered ? 3 : 2;
+    ctx.beginPath(); ctx.roundRect(bx, y, bw, bh, 8); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px monospace';
+    ctx.fillText(label, LOGICAL_W / 2, y + 33);
+  }
+
+  // ─── BOTÓN: CONTINUAR ───
+  const by1 = 102;
+  drawPauseButton(by1, '▶  CONTINUAR', '#3a2200', '#6a4000', '#ffb833');
+
+  // ─── BOTÓN: REINICIAR PARTIDA ───
+  const byRestart = by1 + bh + gap;
+  drawPauseButton(byRestart, '↻  REINICIAR PARTIDA', '#3b2614', '#70451d', '#ff8a3d');
 
   // ─── BOTÓN: OPCIONES ───
-  const by2 = by1 + bh + 8;
-  const optH = optionsOpen ? 160 : bh;
+  const by2 = byRestart + bh + gap;
+  const optH = optionsOpen ? 154 : bh;
   const hov2 = mouse.x > bx && mouse.x < bx+bw && mouse.y > by2 && mouse.y < by2+optH;
   ctx.fillStyle = hov2 ? '#2a4a3a' : '#1a2a1a';
-  ctx.beginPath(); ctx.roundRect(bx, by2, bw, optH, 6); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(bx, by2, bw, optH, 8); ctx.fill();
   ctx.strokeStyle = '#4aff8a'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.roundRect(bx, by2, bw, optH, 6); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(bx, by2, bw, optH, 8); ctx.stroke();
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 17px monospace';
-  ctx.fillText('🔊  OPCIONES', LOGICAL_W / 2, by2 + 29);
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('🔊  OPCIONES', LOGICAL_W / 2, by2 + 33);
 
   // Controles de volumen (solo si OPCIONES está expandido)
   if (optionsOpen) {
@@ -420,41 +563,36 @@ function drawPauseOverlay(gs) {
       return { minus: { x: minX, y: minY, w: btnS, h: btnS }, plus: { x: pluX, y: pluY, w: btnS, h: btnS } };
     };
     // MUSIC slider
-    const mBtns = drawVolSlider('MUSIC', mVol, by2 + 38, '_pauseVolMinus', '_pauseVolPlus');
+    const mBtns = drawVolSlider('MUSIC', mVol, by2 + 42, '_pauseVolMinus', '_pauseVolPlus');
     gs._pauseVolMinus = mBtns.minus;
     gs._pauseVolPlus = mBtns.plus;
     // SFX slider
-    const sBtns = drawVolSlider('SFX', sVol, by2 + 68, '_pauseSfxMinus', '_pauseSfxPlus');
+    const sBtns = drawVolSlider('SFX', sVol, by2 + 74, '_pauseSfxMinus', '_pauseSfxPlus');
     gs._pauseSfxMinus = sBtns.minus;
     gs._pauseSfxPlus = sBtns.plus;
 
     // ─── BOTÓN: BUTTON LAYOUT ───
-    const layoutBtnY = by2 + 108;
-    const hovLayout = mouse.x > bx && mouse.x < bx+bw && mouse.y > layoutBtnY && mouse.y < layoutBtnY+bh;
+    const layoutBtnY = by2 + 110;
+    const layoutBtnH = 36;
+    const hovLayout = mouse.x > bx && mouse.x < bx+bw && mouse.y > layoutBtnY && mouse.y < layoutBtnY+layoutBtnH;
     ctx.fillStyle = hovLayout ? '#2a4a6a' : '#1a2a3a';
-    ctx.beginPath(); ctx.roundRect(bx, layoutBtnY, bw, bh, 6); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(bx, layoutBtnY, bw, layoutBtnH, 6); ctx.fill();
     ctx.strokeStyle = '#4a8aff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(bx, layoutBtnY, bw, bh, 6); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(bx, layoutBtnY, bw, layoutBtnH, 6); ctx.stroke();
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 17px monospace';
-    ctx.fillText('🎮  BUTTON LAYOUT', LOGICAL_W / 2, layoutBtnY + 29);
-    gs._pauseLayoutBtn = { x: bx, y: layoutBtnY, w: bw, h: bh };
+    ctx.font = 'bold 15px monospace';
+    ctx.fillText('🎮  BUTTON LAYOUT', LOGICAL_W / 2, layoutBtnY + 24);
+    gs._pauseLayoutBtn = { x: bx, y: layoutBtnY, w: bw, h: layoutBtnH };
   }
 
-  // ─── BOTÓN: VOLVER AL MENÚ ───
-  const by3 = by2 + optH + 8;
-  const hov3 = mouse.x > bx && mouse.x < bx+bw && mouse.y > by3 && mouse.y < by3+bh;
-  ctx.fillStyle = hov3 ? '#5a2a2a' : '#3a1a1a';
-  ctx.beginPath(); ctx.roundRect(bx, by3, bw, bh, 6); ctx.fill();
-  ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.roundRect(bx, by3, bw, bh, 6); ctx.stroke();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 17px monospace';
-  ctx.fillText('🏠  VOLVER AL MENÚ', LOGICAL_W / 2, by3 + 29);
+  // ─── BOTÓN: SALIR AL MENÚ ───
+  const by3 = by2 + optH + gap;
+  drawPauseButton(by3, '🏠  SALIR AL MENÚ', '#3a1a1a', '#5a2a2a', '#ff4a4a');
 
   // Guarda bounds de los botones principales para detección de clics
   gs._pauseBtns = {
     resume: { x: bx, y: by1, w: bw, h: bh },
+    restart: { x: bx, y: byRestart, w: bw, h: bh },
     options: { x: bx, y: by2, w: bw, h: optH },
     menu: { x: bx, y: by3, w: bw, h: bh }
   };

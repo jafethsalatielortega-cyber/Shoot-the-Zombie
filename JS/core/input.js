@@ -594,9 +594,9 @@ function handleGamepadMenu(now, prev) {
     }
   } else if (isPaused) {
     if (gs._pauseOptionsOpen) {
-      buttons = [gs._pauseVolMinus, gs._pauseVolPlus, gs._pauseSfxMinus, gs._pauseSfxPlus, gs._pauseLayoutBtn, gs._pauseBtns?.menu].filter(Boolean);
+      buttons = [gs._pauseBtns?.resume, gs._pauseBtns?.restart, gs._pauseBtns?.options, gs._pauseVolMinus, gs._pauseVolPlus, gs._pauseSfxMinus, gs._pauseSfxPlus, gs._pauseLayoutBtn, gs._pauseBtns?.menu].filter(Boolean);
     } else if (gs._pauseBtns) {
-      buttons = [gs._pauseBtns.resume, gs._pauseBtns.options, gs._pauseBtns.menu].filter(Boolean);
+      buttons = [gs._pauseBtns.resume, gs._pauseBtns.restart, gs._pauseBtns.options, gs._pauseBtns.menu].filter(Boolean);
     }
   } else if (isGameOver) {
     buttons = [
@@ -639,8 +639,8 @@ function handleGamepadMenu(now, prev) {
       if (_gpMenuFocus === 2) { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); }
     }
     if (isPaused && gs._pauseOptionsOpen) {
-      if (_gpMenuFocus === 0) { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); if (bgMusic) bgMusic.volume = 0.4 * masterVolume; }
-      if (_gpMenuFocus === 2) { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); }
+      if (_gpMenuFocus === 3) { masterVolume = Math.max(0, Math.round((masterVolume - 0.1) * 10) / 10); if (bgMusic) bgMusic.volume = 0.4 * masterVolume; }
+      if (_gpMenuFocus === 5) { sfxVolume = Math.max(0, Math.round((sfxVolume - 0.1) * 10) / 10); }
     }
   }
   if (now['ArrowRight'] && !prev['ArrowRight']) {
@@ -649,8 +649,8 @@ function handleGamepadMenu(now, prev) {
       if (_gpMenuFocus === 2) { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); }
     }
     if (isPaused && gs._pauseOptionsOpen) {
-      if (_gpMenuFocus === 0) { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); if (bgMusic) bgMusic.volume = 0.4 * masterVolume; }
-      if (_gpMenuFocus === 2) { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); }
+      if (_gpMenuFocus === 3) { masterVolume = Math.min(1, Math.round((masterVolume + 0.1) * 10) / 10); if (bgMusic) bgMusic.volume = 0.4 * masterVolume; }
+      if (_gpMenuFocus === 5) { sfxVolume = Math.min(1, Math.round((sfxVolume + 0.1) * 10) / 10); }
     }
   }
 

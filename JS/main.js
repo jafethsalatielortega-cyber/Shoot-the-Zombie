@@ -273,6 +273,16 @@ function loop(timestamp) {
                 handled = true;
                 if (gs.player) gs.player.fireCooldown = 0.15;
               }
+              // ─── REINICIAR PARTIDA EN EL MAPA ACTUAL ───
+              if (!handled &&
+                  mouse.x > btns.restart.x && mouse.x < btns.restart.x + btns.restart.w &&
+                  mouse.y > btns.restart.y && mouse.y < btns.restart.y + btns.restart.h) {
+                if (typeof meteorEvent !== 'undefined' && meteorEvent.triggered) resetMeteorEvent();
+                stopBgMusic();
+                gs = createGameState();
+                startGame();
+                handled = true;
+              }
               // ─── OPCIONES (EXPANDIR/CONTRAER) ───
               if (!handled &&
                   mouse.x > btns.options.x && mouse.x < btns.options.x + btns.options.w &&
