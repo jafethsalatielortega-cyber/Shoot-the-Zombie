@@ -75,6 +75,10 @@ class Player {
     this.doubleShotTimer = 0;     // Si > 0, el jugador dispara DOS balas por cada disparo. El temporizador cuenta cuánto tiempo queda
     this.unlimitedAmmoTimer = 0;  // Si > 0, el jugador tiene munición infinita. El temporizador cuenta cuánto tiempo queda
 
+    // ─── PERK: RESISTENCIA A EXPLOSIONES ───
+    // Número de explosiones de Bomber que Blast Guard puede absorber.
+    this.explosionResistCharges = 0;
+
     // ─── GRANADA ───
     // Controla el lanzamiento de granadas
     this.grenadeCooldown = 0;  // Tiempo de espera entre lanzamientos de granada. Mientras > 0, no se puede lanzar otra

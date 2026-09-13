@@ -505,6 +505,7 @@ function renderBusMap(gs) {
   renderBusInterior(gs);
   renderBusRooftop(gs);
   drawBusMysteryBox(gs);
+  drawExplosionPerkMachine(_EXPLOSION_PERK_X_BUS, BUS_ROOF_Y, p.explosionResistCharges);
 
   ctx.restore();
   ctx.save();

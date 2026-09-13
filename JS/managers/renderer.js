@@ -80,6 +80,79 @@ function drawMysteryBoxVisual(bx, by, boxActive, pulse) {
   ctx.restore();
 }
 
+// ─── MÁQUINA DEL PERK BLAST GUARD ───
+// Diseño compartido por los dos mapas. Las tres luces indican las cargas
+// disponibles y el brillo azul confirma que el perk está activo.
+function drawExplosionPerkMachine(x, y, charges) {
+  const active = charges > 0;
+  const pulse = 0.82 + Math.sin(Date.now() * 0.005) * 0.18;
+  ctx.save();
+  if (active) {
+    ctx.shadowColor = '#52e8ff';
+    ctx.shadowBlur = 18 * pulse;
+  }
+
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath(); ctx.ellipse(x, y + 2, 34, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  const machineGradient = ctx.createLinearGradient(x - 28, y - 72, x + 28, y);
+  machineGradient.addColorStop(0, '#244b58');
+  machineGradient.addColorStop(0.55, '#142c35');
+  machineGradient.addColorStop(1, '#08171d');
+  ctx.fillStyle = machineGradient;
+  ctx.beginPath(); ctx.roundRect(x - 29, y - 72, 58, 72, 5); ctx.fill();
+  ctx.strokeStyle = active ? '#52e8ff' : '#4d7883';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#1b2227';
+  ctx.fillRect(x - 24, y - 65, 48, 39);
+  ctx.strokeStyle = '#6b9199';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - 24, y - 65, 48, 39);
+
+  ctx.fillStyle = active ? '#52e8ff' : '#55747b';
+  ctx.beginPath();
+  ctx.moveTo(x, y - 60);
+  ctx.lineTo(x + 13, y - 55);
+  ctx.lineTo(x + 10, y - 40);
+  ctx.quadraticCurveTo(x, y - 29, x - 10, y - 40);
+  ctx.lineTo(x - 13, y - 55);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#102329';
+  ctx.fillRect(x - 2, y - 55, 4, 17);
+  ctx.fillRect(x - 7, y - 48, 14, 4);
+
+  ctx.fillStyle = '#ff9d2e';
+  ctx.fillRect(x - 29, y - 25, 58, 6);
+  ctx.fillStyle = '#05090b';
+  for (let sx = x - 25; sx < x + 25; sx += 12) {
+    ctx.beginPath();
+    ctx.moveTo(sx, y - 25);
+    ctx.lineTo(sx + 6, y - 19);
+    ctx.lineTo(sx + 11, y - 19);
+    ctx.lineTo(sx + 5, y - 25);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = active && i < charges ? '#52e8ff' : '#263b40';
+    ctx.beginPath(); ctx.arc(x - 13 + i * 13, y - 11, 4, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = '#9ec2c9';
+  ctx.font = 'bold 7px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('BLAST', x, y - 2);
+
+  ctx.fillStyle = '#0b1114';
+  ctx.fillRect(x - 24, y, 8, 6);
+  ctx.fillRect(x + 16, y, 8, 6);
+  ctx.restore();
+}
+
 // ─── RENDERIZAR JUEGO ───
 // Dibuja todos los elementos del juego en el canvas: mapa, zombies, jugador, balas,
 // proyectiles, granadas, partículas y HUD. Aplica efectos de cámara como temblor y FOV.
@@ -134,6 +207,13 @@ function renderGame(gs) {
     ctx.restore();
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
+  }
+  if (gs.selectedMap !== 2) {
+    drawExplosionPerkMachine(
+      _EXPLOSION_PERK_X_CITY - gs.camX,
+      GROUND_Y,
+      p.explosionResistCharges
+    );
   }
   drawPickups(gs);                                        // Objetos recogibles (salud, munición, power-ups)
 
@@ -474,6 +554,7 @@ function startGame() {
   gs.grenades = [];
   gs.bossAnnouncement = { active: false, opacity: 0, wave: 0, timer: 0 };
   if (typeof _mysteryBoxWeaponIdx !== 'undefined') { _mysteryBoxWeaponIdx = -1; }
+  if (typeof _explosionPerkHoldTime !== 'undefined') { _explosionPerkHoldTime = 0; }
   clearKeys();
 }
 

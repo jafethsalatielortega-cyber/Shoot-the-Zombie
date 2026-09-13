@@ -4,6 +4,26 @@ let _mysteryBoxWeaponIdx = -1;
 let _mysteryBoxHoldTime = 0;
 const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 
+// ─── PERK: BLAST GUARD (compartido por ambos mapas) ───
+// Absorbe por completo tres explosiones de zombies Bomber. Al consumir la
+// tercera carga se agota y puede comprarse nuevamente por 15000 puntos.
+const _EXPLOSION_PERK_COST = 15000;
+const _EXPLOSION_PERK_MAX_CHARGES = 3;
+const _EXPLOSION_PERK_X_CITY = 1100;
+const _EXPLOSION_PERK_X_BUS = 1200;
+let _explosionPerkHoldTime = 0;
+
+function getExplosionPerkPosition(gs) {
+  return gs.selectedMap === 2
+    ? { x: _EXPLOSION_PERK_X_BUS, y: BUS_ROOF_Y }
+    : { x: _EXPLOSION_PERK_X_CITY, y: GROUND_Y };
+}
+
+function isNearExplosionPerk(gs, player, range) {
+  const perk = getExplosionPerkPosition(gs);
+  return Math.abs(player.x - perk.x) < range && Math.abs(player.y - perk.y) < 55;
+}
+
 // Recorrido visual del stick de FIRE. La dirección conserva exactamente el
 // ángulo del dedo y la distancia crece de forma progresiva.
 const FIRE_AIM_MIN_DISTANCE = 150;
@@ -245,7 +265,7 @@ function updatePlaying(gs, dt) {
   // Cuando se suelta Q, reinicia el buffer
   if (!keys['KeyQ']) p._qBuf = false;
 
-  // ─── ATAQUE CUCHILLO (TECLA E) / CAJA MISTERIOSA ───
+  // ─── ATAQUE CUCHILLO (TECLA E) / INTERACCIONES ───
   // Detecta flanco de subida de la tecla E
   if ((keys['KeyE']) && !p._eBuf && p.knifeCooldown <= 0 && p.knifeTimer <= 0) {
     let nearBox = false;
@@ -258,7 +278,8 @@ function updatePlaying(gs, dt) {
         if (Math.abs(p.x - boxX) < 55 && Math.abs(p.y - GROUND_Y) < 50) nearBox = true;
       }
     }
-    if (!nearBox) {
+    const nearExplosionPerk = p.explosionResistCharges <= 0 && isNearExplosionPerk(gs, p, 65);
+    if (!nearBox && !nearExplosionPerk) {
       p._eBuf = true;
       if (p.weapon.isMelee && p.weapon.index === 5) {
         // ─── ATAQUE KATANA ───
@@ -277,10 +298,31 @@ function updatePlaying(gs, dt) {
         spawnParticles(4, p.x + p.dir * 20, p.y - 20, '#e8e8e8', 200, 1.2, 0, 3, 0.15);
       }
     } else {
-      p._eBuf = true;                                           // Marca buffer para la caja misteriosa
+      p._eBuf = true;                                           // Marca buffer para la interacción
     }
   }
   if (!keys['KeyE']) p._eBuf = false;
+
+  // ─── COMPRA DEL PERK BLAST GUARD ───
+  // Mantener E (o KNIFE en táctil) durante 1.5s compra tres cargas. Mientras
+  // haya cargas activas no se puede recomprar ni gastar puntos por accidente.
+  if (!p.dead && p.explosionResistCharges <= 0 && isNearExplosionPerk(gs, p, 65)) {
+    if (keys['KeyE'] && gs.score >= _EXPLOSION_PERK_COST) {
+      _explosionPerkHoldTime += dt;
+      if (_explosionPerkHoldTime >= 1.5) {
+        _explosionPerkHoldTime = 0;
+        gs.score -= _EXPLOSION_PERK_COST;
+        p.explosionResistCharges = _EXPLOSION_PERK_MAX_CHARGES;
+        spawnFloat('BLAST GUARD  3/3', p.x, p.y - 65, '#52e8ff');
+        try { playTone(260, 720, 'triangle', 0.28, 0.22); } catch(e) {}
+        try { playTone(520, 1040, 'sine', 0.22, 0.18); } catch(e) {}
+      }
+    } else {
+      _explosionPerkHoldTime = 0;
+    }
+  } else {
+    _explosionPerkHoldTime = 0;
+  }
 
   // ─── CAJA MISTERIOSA (MAPA CIUDAD) ───
   if (gs.selectedMap !== 2 && gs.state === 'playing' && !p.dead) {
@@ -925,10 +967,22 @@ function bombExplode(gs, z) {
   // Calcula la distancia al jugador
   const dist = Math.hypot(z.x - gs.player.x, z.y - gs.player.y);
   if (dist < 130) {                                       // Daño al jugador si está dentro del radio de explosión
-    gs.player.hp -= 30;
-    gs.player.hitCooldown = 2.5;
-    gs.damageFlash = 1;
-    if (gs.player.hp <= 0) { gs.player.hp = 0; gs.player.dead = true; SFX.hurt(); }
+    if (gs.player.explosionResistCharges > 0) {
+      gs.player.explosionResistCharges--;
+      const chargesLeft = gs.player.explosionResistCharges;
+      spawnFloat(
+        chargesLeft > 0 ? 'BLAST BLOCKED  ' + chargesLeft + '/3' : 'BLAST GUARD DEPLETED',
+        gs.player.x,
+        gs.player.y - 58,
+        chargesLeft > 0 ? '#52e8ff' : '#ffb833'
+      );
+      try { playTone(900, 420, 'square', 0.16, 0.12); } catch(e) {}
+    } else {
+      gs.player.hp -= 30;
+      gs.player.hitCooldown = 2.5;
+      gs.damageFlash = 1;
+      if (gs.player.hp <= 0) { gs.player.hp = 0; gs.player.dead = true; SFX.hurt(); }
+    }
   }
   const blastRadius = 120;                                 // Radio de la explosión
   const blastDmg = 150;                                    // Daño a otros zombies

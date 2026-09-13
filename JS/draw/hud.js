@@ -42,6 +42,19 @@ function drawHUD(gs) {
   ctx.font = 'bold 14px monospace';
   ctx.fillText('SCORE: ' + String(gs.score).padStart(6,'0'), 22, 51);
 
+  // ─── PERK BLAST GUARD ───
+  // Muestra de forma permanente las cargas restantes mientras está activo.
+  if (p.explosionResistCharges > 0) {
+    ctx.fillStyle = 'rgba(8,30,38,0.82)';
+    ctx.fillRect(14, 63, 178, 22);
+    ctx.strokeStyle = '#52e8ff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(14, 63, 178, 22);
+    ctx.fillStyle = '#52e8ff';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('◆ BLAST GUARD  ' + p.explosionResistCharges + '/3', 22, 78);
+  }
+
   // ─── OLEADA (parpadea en rojo si es pesadilla, oleada >= 10) ───
   // Cambia la alineación del texto a centrado para los elementos del medio
   ctx.textAlign = 'center';
@@ -312,6 +325,40 @@ function drawHUD(gs) {
       ctx.textAlign = 'left';
     }
   }
+  }
+
+  // ─── MENSAJE DE COMPRA: BLAST GUARD ───
+  if (gs.state === 'playing' && typeof getExplosionPerkPosition === 'function') {
+    const perkPos = getExplosionPerkPosition(gs);
+    const nearPerk = Math.abs(p.x - perkPos.x) < 120 && Math.abs(p.y - perkPos.y) < 55;
+    if (nearPerk && p.explosionResistCharges <= 0) {
+      const canAfford = gs.score >= _EXPLOSION_PERK_COST;
+      const panelX = LOGICAL_W / 2 - 150;
+      const panelY = LOGICAL_H - 108;
+      ctx.fillStyle = 'rgba(5,20,26,0.88)';
+      ctx.beginPath(); ctx.roundRect(panelX, panelY, 300, 52, 7); ctx.fill();
+      ctx.strokeStyle = canAfford ? '#52e8ff' : '#6a7880';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(panelX, panelY, 300, 52, 7); ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = canAfford ? '#52e8ff' : '#aab3b7';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('◆ BLAST GUARD · 3 EXPLOSIONS', LOGICAL_W / 2, panelY + 18);
+      ctx.fillStyle = canAfford ? '#fff' : '#ff6b6b';
+      ctx.font = 'bold 10px monospace';
+      if (canAfford) {
+        const interactionLabel = showTouchControls ? 'HOLD KNIFE' : 'HOLD [E]';
+        ctx.fillText(interactionLabel + ' 1.5s · ' + _EXPLOSION_PERK_COST + ' PTS', LOGICAL_W / 2, panelY + 35);
+        const purchaseProgress = Math.min(1, _explosionPerkHoldTime / 1.5);
+        ctx.fillStyle = '#183740';
+        ctx.fillRect(panelX + 20, panelY + 42, 260, 5);
+        ctx.fillStyle = '#52e8ff';
+        ctx.fillRect(panelX + 20, panelY + 42, 260 * purchaseProgress, 5);
+      } else {
+        ctx.fillText('NEED ' + (_EXPLOSION_PERK_COST - gs.score) + ' PTS', LOGICAL_W / 2, panelY + 36);
+      }
+      ctx.textAlign = 'left';
+    }
   }
 
   // Restaura el contexto de dibujo a su estado original
