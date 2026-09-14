@@ -2,12 +2,23 @@
 // Lista global que almacena todas las partículas activas (sangre, explosiones, cenizas, etc.)
 const particles = [];
 
+function particleBudget() {
+  return (typeof isTouchDevice !== 'undefined' && isTouchDevice) ? 140 : 320;
+}
+
+function scaledParticleCount(count) {
+  return (typeof isTouchDevice !== 'undefined' && isTouchDevice)
+    ? Math.max(1, Math.ceil(count * 0.55))
+    : count;
+}
+
 // Crea una cantidad 'count' de partículas con propiedades aleatorias dentro de un rango
 // Útil como base para explosiones, sangre, fogonazos, etc.
 // Parámetros: cantidad, posición (x,y), color, velocidad, dispersión (radianes), gravedad, tamaño, vida (segundos)
 function spawnParticles(count, x, y, color, speed, spread, gravity, size, life) {
+  count = scaledParticleCount(count);
   // Bucle que se repite tantas veces como partículas queramos crear
-  for (let i=0; i<count; i++) {
+  for (let i=0; i<count && particles.length < particleBudget(); i++) {
     // Calcula un ángulo aleatorio dentro del rango indicado (spread)
     const a = Math.random() * spread - spread/2;
     // Agrega una nueva partícula al arreglo global con sus propiedades iniciales
@@ -35,8 +46,9 @@ function spawnBlood(x, y) {
 // ─── RESTOS DE MUERTE ───
 // Crea fragmentos rectangulares que salen disparados al destruir un enemigo
 function spawnDeathParts(x, y, color) {
+  const count = scaledParticleCount(12);
   // Genera 12 fragmentos que vuelan en todas direcciones
-  for (let i=0; i<12; i++) {
+  for (let i=0; i<count && particles.length < particleBudget(); i++) {
     // Ángulo aleatorio en un círculo completo (0 a 2*PI radianes)
     const a = Math.random() * Math.PI * 2;
     // Velocidad aleatoria entre 80 y 200 píxeles/segundo
@@ -63,7 +75,8 @@ function spawnExplosion(x, y) {
   // Capa de destellos rojos (10 partículas grandes)
   spawnParticles(10, x, y, '#ff3300', 150, Math.PI*2, GRAVITY, 6, 0.5);
   // Fragmentos grises que flotan hacia arriba (humo/escombros)
-  for (let i=0; i<8; i++) {
+  const debrisCount = scaledParticleCount(8);
+  for (let i=0; i<debrisCount && particles.length < particleBudget(); i++) {
     // Cada fragmento va en una dirección aleatoria
     const a = Math.random() * Math.PI * 2;
     particles.push({
@@ -89,7 +102,12 @@ function spawnMuzzle(x, y, col) {
 // Se llama en cada frame, pero respeta el límite para no saturar el rendimiento
 function spawnAsh() {
   // Solo crea cenizas si hay menos de 45 en pantalla (para no saturar)
-  if (particles.filter(p=>p.isAsh).length < 45) {
+  const ashLimit = (typeof isTouchDevice !== 'undefined' && isTouchDevice) ? 22 : 45;
+  let ashCount = 0;
+  for (let i = 0; i < particles.length && ashCount < ashLimit; i++) {
+    if (particles[i].isAsh) ashCount++;
+  }
+  if (ashCount < ashLimit && particles.length < particleBudget()) {
     particles.push({
       x: Math.random()*LOGICAL_W*2, y: -5,            // Aparecen en la parte superior en cualquier X
       vx: -10 + Math.random()*5,                        // Se mueven un poco a la izquierda
@@ -133,6 +151,7 @@ function drawParticles(camX) {
     ctx.fillStyle = p.color;
     // Las cenizas no se mueven con la cámara (efecto parallax), el resto sí
     const wx = p.isAsh ? p.x : p.x - camX;
+    if (wx < -40 || wx > LOGICAL_W + 40 || p.y < -60 || p.y > LOGICAL_H + 80) continue;
     // Si es rectangular se dibuja con fillRect, si no, con un círculo (arc)
     if (p.isRect) {
       ctx.fillRect(wx - p.size/2, p.y - p.size/2, p.size, p.size);

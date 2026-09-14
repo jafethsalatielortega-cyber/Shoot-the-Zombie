@@ -36,7 +36,9 @@ function drawMap(camX) {
     const bx = (i * 210 + p1off % (14*210) + 14*210) % (14*210) - 50;
     // Altura del edificio varía según el índice (i*73%80 da valores entre 0 y 79)
     const bh = 60 + (i*73%80);
-    ctx.fillRect(bx, GROUND_Y - bh - 40, 90 + (i*37%60), bh + 40);
+    const bw = 90 + (i*37%60);
+    if (bx + bw < -20 || bx > LOGICAL_W + 20) continue;
+    ctx.fillRect(bx, GROUND_Y - bh - 40, bw, bh + 40);
     // Ventanas iluminadas (cuadritos amarillos tenues)
     ctx.fillStyle = 'rgba(255,200,80,0.15)';
     for (let r=0; r<4; r++) for (let c=0; c<3; c++) {
@@ -54,7 +56,9 @@ function drawMap(camX) {
   for (let i=0; i<10; i++) {
     const bx = (i * 280 + p2off % (10*280) + 10*280) % (10*280) - 50;
     const bh = 40 + (i*61%70);
-    ctx.fillRect(bx, GROUND_Y - bh - 20, 110+(i*43%50), bh+20);
+    const bw = 110+(i*43%50);
+    if (bx + bw < -20 || bx > LOGICAL_W + 20) continue;
+    ctx.fillRect(bx, GROUND_Y - bh - 20, bw, bh+20);
     // Detalles de ventanas en esta capa (rectángulos más oscuros)
     ctx.fillStyle = '#3a2830';
     ctx.fillRect(bx+10, GROUND_Y-bh-20, 20, 15);

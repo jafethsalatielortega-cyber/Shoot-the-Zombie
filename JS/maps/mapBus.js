@@ -67,6 +67,7 @@ let _busSpeedParticles = [];
 let _busRainParticles = [];
 // Partículas de escape de los tubos de ventilación
 let _busExhaustParticles = [];
+let _busExhaustSpawnFrame = 0;
 // Brillo intermitente de la escotilla de emergencia
 let _busHatchFlash = 0;
 // Desplazamiento vertical de la cámara (sube/baja entre techo y cabina)
@@ -515,13 +516,20 @@ function renderBusMap(gs) {
 
   // ─── ENTIDADES Y EFECTOS ───
   drawPickups(gs);
-  for (const z of gs.zombies) drawZombie(z, cx);
-  if (gs.boss) drawBoss(gs.boss, cx);
+  for (const z of gs.zombies) {
+    const zx = z.x - cx;
+    if (zx > -100 && zx < LOGICAL_W + 100) drawZombie(z, cx);
+  }
+  if (gs.boss) {
+    const bossX = gs.boss.x - cx;
+    if (bossX > -180 && bossX < LOGICAL_W + 180) drawBoss(gs.boss, cx);
+  }
   if (!p.dead || p.deathTimer < 1.5) drawPlayer(p, cx);
   drawBullets(gs);
   for (const a of gs.acidProjectiles) {
     if (a.dead) continue;
     const ax = a.x - cx;
+    if (ax < -30 || ax > LOGICAL_W + 30) continue;
     ctx.save();
     ctx.shadowColor='#39ff14'; ctx.shadowBlur=10;
     ctx.fillStyle='#39ff14';
@@ -530,13 +538,14 @@ function renderBusMap(gs) {
   }
   for (const g of gs.grenades) {
     if (g.dead) continue;
+    const gx = g.x - cx;
+    if (gx < -80 || gx > LOGICAL_W + 80) continue;
     for (let ti=0;ti<g.trail.length;ti++){
       const t=g.trail[ti]; const alpha=ti/g.trail.length*0.5;
       ctx.globalAlpha=alpha; ctx.fillStyle='#555';
       ctx.beginPath(); ctx.arc(t.x - cx,t.y,2+ti*0.3,0,Math.PI*2); ctx.fill();
     }
     ctx.globalAlpha=1;
-    const gx = g.x - cx;
     ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(gx,g.y,5,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#ff8800';
     const fuseSize=g.timer<0.5?2+Math.sin(Date.now()*0.03)*1.5:2;
@@ -575,6 +584,8 @@ function renderBusBackground(gs) {
 // tres capas parallax del horizonte, recortadas al área de la ventana.
 function renderBusWindowCity(gs) {
   for (const w of BUS_WINDOWS) {
+    const screenX = w.x - gs.camX;
+    if (screenX + w.w < -40 || screenX > LOGICAL_W + 40) continue;
     ctx.save();
     ctx.beginPath(); ctx.roundRect(w.x,WIN_Y,w.w,WIN_H,2); ctx.clip();
 
@@ -652,20 +663,22 @@ function renderBusExterior(gs) {
     ctx.fillStyle='rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.arc(cx,390+vibe,40,Math.PI,0); ctx.fill();
   }
-  drawWheel(60,440+vibe);
-  drawWheel(BUS_RIGHT - 40,440+vibe);
+  if (60 - gs.camX > -60) drawWheel(60,440+vibe);
+  if (BUS_RIGHT - 40 - gs.camX < LOGICAL_W + 60) drawWheel(BUS_RIGHT - 40,440+vibe);
 
   for (const w of BUS_WINDOWS){
+    const screenX = w.x - gs.camX;
+    if (screenX + w.w < -40 || screenX > LOGICAL_W + 40) continue;
     if (w.broken){
       ctx.strokeStyle='#555'; ctx.lineWidth=1;
       for (let i=0;i<6;i++){
-        const bx=w.x+Math.random()*w.w, by=WIN_Y+Math.random()*WIN_H;
-        ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+8-Math.random()*16,by+8-Math.random()*16); ctx.stroke();
+        const bx=w.x+(i*37+w.x)%w.w, by=WIN_Y+(i*23+w.x)%WIN_H;
+        ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+8-(i%3)*7,by+8-(i%2)*11); ctx.stroke();
       }
       ctx.fillStyle='rgba(170,204,255,0.1)';
       for (let i=0;i<4;i++){
         ctx.beginPath();
-        const cx=w.x+Math.random()*w.w, cy=WIN_Y+Math.random()*WIN_H;
+        const cx=w.x+(i*29+w.x)%w.w, cy=WIN_Y+(i*19+w.x)%WIN_H;
         ctx.moveTo(cx,cy); ctx.lineTo(cx+10,cy-5); ctx.lineTo(cx+15,cy+8); ctx.closePath(); ctx.fill();
       }
     }
@@ -685,9 +698,12 @@ function renderBusInterior(gs) {
 
   ctx.fillStyle='#2a2a2a'; ctx.fillRect(0,CABIN_FLOOR_Y-8+vibe,BUS_RIGHT,8);
   ctx.fillStyle='#333';
-  for (let i=0;i<BUS_RIGHT/22;i++) ctx.fillRect(i*22,CABIN_FLOOR_Y-6+vibe,14,2);
+  const floorDetailStart = Math.max(0, Math.floor((gs.camX - 30) / 22));
+  const floorDetailEnd = Math.min(Math.ceil(BUS_RIGHT / 22), Math.ceil((gs.camX + LOGICAL_W + 30) / 22));
+  for (let i=floorDetailStart;i<floorDetailEnd;i++) ctx.fillRect(i*22,CABIN_FLOOR_Y-6+vibe,14,2);
 
   for (const s of BUS_SEATS){
+    if (s.x - gs.camX < -50 || s.x - gs.camX > LOGICAL_W + 50) continue;
     const sx=s.x+vibe, sy=300+(s.side?0:25);
     ctx.fillStyle='#1a3a3a';
     ctx.beginPath(); ctx.roundRect(sx,sy,30,12,2); ctx.fill();
@@ -702,6 +718,7 @@ function renderBusInterior(gs) {
 
   ctx.strokeStyle='#777'; ctx.lineWidth=1;
   for (const px of BUS_GRAB_POLES_X){
+    if (px - gs.camX < -30 || px - gs.camX > LOGICAL_W + 30) continue;
     ctx.beginPath(); ctx.moveTo(px+vibe,CABIN_CEIL_Y); ctx.lineTo(px+vibe,CABIN_FLOOR_Y); ctx.stroke();
   }
   ctx.strokeStyle='#555'; ctx.lineWidth=1.5;
@@ -711,6 +728,7 @@ function renderBusInterior(gs) {
   ctx.fillStyle='#ffcc44';
   const lampXs=[150,450,750,1050,1350,1650];
   for (const lx of lampXs){
+    if (lx - gs.camX < -60 || lx - gs.camX > LOGICAL_W + 60) continue;
     let flicker=1;
     const fk = Math.floor(t/3000 + lx) % 4;
     if (fk===0 && t%180 < 240) flicker = 0.4 + Math.random()*0.6;
@@ -741,11 +759,13 @@ function renderBusInterior(gs) {
     ctx.textAlign='center'; ctx.fillStyle='#ffcc00'; ctx.font='bold 9px monospace';
     ctx.fillText('EMERGENCY EXIT', hx+hw/2+vibe, HATCH_Y-6+vibe+shake);
   }
-  drawHatch(HATCH_X, HATCH_W);
-  drawHatch(HATCH2_X, HATCH2_W);
+  if (HATCH_X + HATCH_W - gs.camX > -40 && HATCH_X - gs.camX < LOGICAL_W + 40) drawHatch(HATCH_X, HATCH_W);
+  if (HATCH2_X + HATCH2_W - gs.camX > -40 && HATCH2_X - gs.camX < LOGICAL_W + 40) drawHatch(HATCH2_X, HATCH2_W);
   ctx.textAlign='left';
 
   for (const w of BUS_WINDOWS){
+    const screenX = w.x - gs.camX;
+    if (screenX + w.w < -40 || screenX > LOGICAL_W + 40) continue;
     if (!w.broken){
       ctx.fillStyle='rgba(170,204,255,0.15)';
       ctx.fillRect(w.x+vibe,WIN_Y+vibe,w.w,WIN_H);
@@ -783,7 +803,9 @@ function renderBusRooftop(gs) {
   const vibe = _busVibeTimer > 0 ? (Math.random()-0.5)*2 : 0;
   ctx.fillStyle='#1e2e1e'; ctx.fillRect(0,BUS_ROOF_Y+vibe,BUS_RIGHT,4);
   ctx.fillStyle='#263626';
-  for (let i=0;i<BUS_RIGHT/80;i++) ctx.fillRect(i*80,BUS_ROOF_Y+vibe,1,4);
+  const roofLineStart = Math.max(0, Math.floor((gs.camX - 20) / 80));
+  const roofLineEnd = Math.min(Math.ceil(BUS_RIGHT / 80), Math.ceil((gs.camX + LOGICAL_W + 20) / 80));
+  for (let i=roofLineStart;i<roofLineEnd;i++) ctx.fillRect(i*80,BUS_ROOF_Y+vibe,1,4);
 
   ctx.fillStyle='#2a2a2a'; ctx.fillRect(250,BUS_ROOF_Y-28+vibe,80,34);
   ctx.strokeStyle='#444'; ctx.lineWidth=1; ctx.strokeRect(250,BUS_ROOF_Y-28+vibe,80,34);
@@ -802,13 +824,22 @@ function renderBusRooftop(gs) {
   ctx.fillStyle='#333'; ctx.fillRect(1720,BUS_ROOF_Y-60+vibe,16,60);
   ctx.fillStyle='#555'; ctx.fillRect(1718,BUS_ROOF_Y-62+vibe,20,6);
 
-  _busExhaustParticles.push({x:1190+Math.random()*4,y:BUS_ROOF_Y-50-vibe,vy:-20+Math.random()*-10,vx:-10+Math.random()*20,life:1});
-  _busExhaustParticles.push({x:1730+Math.random()*4,y:BUS_ROOF_Y-50-vibe,vy:-20+Math.random()*-10,vx:-10+Math.random()*20,life:1});
+  _busExhaustSpawnFrame++;
+  const mobileRender = typeof isTouchDevice !== 'undefined' && isTouchDevice;
+  const spawnExhaust = !mobileRender || _busExhaustSpawnFrame % 3 === 0;
+  if (spawnExhaust && Math.abs(1190 - gs.camX - LOGICAL_W / 2) < LOGICAL_W / 2 + 80) {
+    _busExhaustParticles.push({x:1190+Math.random()*4,y:BUS_ROOF_Y-50-vibe,vy:-20+Math.random()*-10,vx:-10+Math.random()*20,life:1});
+  }
+  if (spawnExhaust && Math.abs(1730 - gs.camX - LOGICAL_W / 2) < LOGICAL_W / 2 + 80) {
+    _busExhaustParticles.push({x:1730+Math.random()*4,y:BUS_ROOF_Y-50-vibe,vy:-20+Math.random()*-10,vx:-10+Math.random()*20,life:1});
+  }
   for (let i=_busExhaustParticles.length-1;i>=0;i--){
     const e=_busExhaustParticles[i];
     e.x+=e.vx*0.02; e.y+=e.vy*0.02; e.life-=0.02;
-    ctx.globalAlpha=e.life*0.4; ctx.fillStyle='#888';
-    ctx.beginPath(); ctx.arc(e.x,e.y,2+e.life*2,0,Math.PI*2); ctx.fill();
+    if (e.x - gs.camX > -30 && e.x - gs.camX < LOGICAL_W + 30) {
+      ctx.globalAlpha=e.life*0.4; ctx.fillStyle='#888';
+      ctx.beginPath(); ctx.arc(e.x,e.y,2+e.life*2,0,Math.PI*2); ctx.fill();
+    }
     if (e.life<=0) _busExhaustParticles.splice(i,1);
   }
   ctx.globalAlpha=1;
@@ -816,13 +847,17 @@ function renderBusRooftop(gs) {
   ctx.fillStyle='rgba(255,255,255,0.04)';
   for (const sp of _busSpeedParticles){
     sp.x = (sp.x - sp.spd*0.016 + BUS_RIGHT*2) % (BUS_RIGHT*2);
-    ctx.fillRect(sp.x,BUS_ROOF_Y+10+sp.y%140,sp.len,1);
+    if (sp.x - gs.camX > -sp.len && sp.x - gs.camX < LOGICAL_W) {
+      ctx.fillRect(sp.x,BUS_ROOF_Y+10+sp.y%140,sp.len,1);
+    }
   }
   ctx.fillStyle='rgba(200,220,255,0.15)';
   for (const rp of _busRainParticles){
     rp.x = (rp.x - rp.spd*0.016 + BUS_RIGHT) % BUS_RIGHT;
     rp.y = (rp.y + 1.5) % 140;
-    ctx.fillRect(rp.x,BUS_ROOF_Y+10+rp.y,1,rp.len);
+    if (rp.x - gs.camX > -10 && rp.x - gs.camX < LOGICAL_W + 10) {
+      ctx.fillRect(rp.x,BUS_ROOF_Y+10+rp.y,1,rp.len);
+    }
   }
   ctx.globalAlpha=1;
 }

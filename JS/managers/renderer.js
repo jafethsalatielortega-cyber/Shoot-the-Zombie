@@ -244,9 +244,15 @@ function renderGame(gs) {
   }
   drawPickups(gs);                                        // Objetos recogibles (salud, munición, power-ups)
 
-  for (const z of gs.zombies) drawZombie(z, gs.camX);    // Dibuja cada zombie activo
+  for (const z of gs.zombies) {
+    const zx = z.x - gs.camX;
+    if (zx > -100 && zx < LOGICAL_W + 100) drawZombie(z, gs.camX);
+  }
 
-  if (gs.boss) drawBoss(gs.boss, gs.camX);                // Dibuja al jefe si existe
+  if (gs.boss) {
+    const bossX = gs.boss.x - gs.camX;
+    if (bossX > -180 && bossX < LOGICAL_W + 180) drawBoss(gs.boss, gs.camX);
+  }
 
   // Dibuja al jugador (incluso si está en animación de muerte, hasta 1.5s)
   if (!p.dead || p.deathTimer < 1.5) drawPlayer(p, gs.camX);
@@ -258,6 +264,7 @@ function renderGame(gs) {
   for (const a of gs.acidProjectiles) {
     if (a.dead) continue;
     const ax = a.x - gs.camX;
+    if (ax < -30 || ax > LOGICAL_W + 30) continue;
     ctx.save();
     ctx.shadowColor = '#39ff14';
     ctx.shadowBlur = 10;
@@ -274,6 +281,7 @@ function renderGame(gs) {
   for (const g of gs.grenades) {
     if (g.dead) continue;
     const gx = g.x - gs.camX;
+    if (gx < -80 || gx > LOGICAL_W + 80) continue;
     for (let ti = 0; ti < g.trail.length; ti++) {
       const t = g.trail[ti];
       const alpha = ti / g.trail.length * 0.5;

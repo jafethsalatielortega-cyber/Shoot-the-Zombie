@@ -7,6 +7,7 @@ function drawPickups(gs) {
   for (const pk of gs.pickups) {
     // Calcula la posición en pantalla restando el desplazamiento de la cámara
     const px = pk.x - gs.camX;
+    if (px < -40 || px > LOGICAL_W + 40) continue;
     // Aplica un efecto de flotación (bob) usando la función seno para que suba y baje suavemente
     const py = pk.y - 15 + Math.sin(pk.bob)*5;
     ctx.save();

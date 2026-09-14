@@ -9,6 +9,9 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 // Factor de escala que adapta el canvas a la ventana del navegador
 let scale = 1;
+// Escala interna de render. En telefonos evita dibujar muchos mas pixeles de
+// los que realmente se muestran; las coordenadas logicas siguen siendo 1280x480.
+let canvasRenderScale = 1;
 
 // ─── REDIMENSIONADO ESTABLE ───
 // Usa un único cálculo por frame. visualViewport representa el área realmente
@@ -35,10 +38,17 @@ function applyCanvasSize() {
   const renderedWidth = LOGICAL_W * scale;
   const renderedHeight = LOGICAL_H * scale;
 
-  // La resolución lógica nunca cambia; así el contexto no se reinicia durante
-  // los eventos de resize emitidos por el navegador móvil.
-  if (canvas.width !== LOGICAL_W) canvas.width = LOGICAL_W;
-  if (canvas.height !== LOGICAL_H) canvas.height = LOGICAL_H;
+  const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const phoneSized = coarsePointer && Math.min(vw, vh) < 600;
+  canvasRenderScale = phoneSized ? Math.max(0.65, Math.min(1, scale)) : 1;
+  const backingWidth = Math.max(1, Math.round(LOGICAL_W * canvasRenderScale));
+  const backingHeight = Math.max(1, Math.round(LOGICAL_H * canvasRenderScale));
+
+  // En telefono el buffer se aproxima al tamaño visible. setTransform conserva
+  // todas las coordenadas y mecanicas originales del juego.
+  if (canvas.width !== backingWidth) canvas.width = backingWidth;
+  if (canvas.height !== backingHeight) canvas.height = backingHeight;
+  ctx.setTransform(canvasRenderScale, 0, 0, canvasRenderScale, 0, 0);
   canvas.style.width = renderedWidth + 'px';
   canvas.style.height = renderedHeight + 'px';
   canvas.style.left = (vx + safeLeft + (usableWidth - renderedWidth) / 2) + 'px';

@@ -7,6 +7,7 @@ function drawBullets(gs) {
   for (const b of gs.bullets) {
     // Calcula la posición horizontal en pantalla restando el desplazamiento de la cámara
     const cx = b.x - gs.camX;
+    if (cx < -100 || cx > LOGICAL_W + 100) continue;
     // La posición vertical no necesita ajuste de cámara (el juego es 2D lateral)
     const cy = b.y;
     ctx.save();

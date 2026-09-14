@@ -19,6 +19,11 @@ let lastTime = 0;
 function loop(timestamp) {
   requestAnimationFrame(loop);
 
+  // Los paneles de 90/120 Hz duplicaban el trabajo del juego en telefonos.
+  // Se mantiene un maximo estable cercano a 60 FPS sin alterar la velocidad,
+  // porque la simulacion continua usando el tiempo real transcurrido (dt).
+  if (isTouchDevice && lastTime && timestamp - lastTime < 15.5) return;
+
   // ─── [NEW] ACTUALIZAR FLAGS DE DISPOSITIVO ───
   updateDeviceFlags();
 
