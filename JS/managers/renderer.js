@@ -87,6 +87,33 @@ function drawExplosionPerkMachine(x, y, charges) {
   const active = charges > 0;
   const pulse = 0.82 + Math.sin(Date.now() * 0.005) * 0.18;
   ctx.save();
+
+  // Rotulo luminoso permanente: permite localizar el perk incluso en las
+  // pantallas pequenas de telefono sin depender del texto del HUD.
+  ctx.shadowColor = active ? '#52e8ff' : '#ff9d2e';
+  ctx.shadowBlur = 12 * pulse;
+  ctx.fillStyle = 'rgba(4,12,16,0.92)';
+  ctx.beginPath(); ctx.roundRect(x - 61, y - 111, 122, 28, 6); ctx.fill();
+  ctx.strokeStyle = active ? '#52e8ff' : '#ff9d2e';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = active ? '#8ff4ff' : '#ffd08a';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('BLAST GUARD', x, y - 101);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 8px monospace';
+  ctx.fillText(active ? charges + ' CARGAS' : '15000 PTS', x, y - 90);
+
+  ctx.strokeStyle = active ? '#52e8ff' : '#ff9d2e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 83);
+  ctx.lineTo(x, y - 72);
+  ctx.stroke();
+
   if (active) {
     ctx.shadowColor = '#52e8ff';
     ctx.shadowBlur = 18 * pulse;

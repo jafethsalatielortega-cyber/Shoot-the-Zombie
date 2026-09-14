@@ -505,7 +505,9 @@ function renderBusMap(gs) {
   renderBusInterior(gs);
   renderBusRooftop(gs);
   drawBusMysteryBox(gs);
-  drawExplosionPerkMachine(_EXPLOSION_PERK_X_BUS, BUS_ROOF_Y, p.explosionResistCharges);
+  // Dentro de la cabina: visible desde el punto inicial y sin quedar recortada
+  // por el borde superior ni tapada por los controles tactiles.
+  drawExplosionPerkMachine(_EXPLOSION_PERK_X_BUS, CABIN_FLOOR_Y, p.explosionResistCharges);
 
   ctx.restore();
   ctx.save();

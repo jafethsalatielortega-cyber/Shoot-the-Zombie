@@ -9,13 +9,15 @@ const _mysteryBoxX1 = 1600; // posición en el mapa ciudad (mapa 1)
 // tercera carga se agota y puede comprarse nuevamente por 15000 puntos.
 const _EXPLOSION_PERK_COST = 15000;
 const _EXPLOSION_PERK_MAX_CHARGES = 3;
-const _EXPLOSION_PERK_X_CITY = 1100;
-const _EXPLOSION_PERK_X_BUS = 1200;
+// Se mantienen fuera de las zonas reservadas a los controles tactiles para
+// que la maquina sea visible y accesible desde el inicio en ambos mapas.
+const _EXPLOSION_PERK_X_CITY = 520;
+const _EXPLOSION_PERK_X_BUS = 820;
 let _explosionPerkHoldTime = 0;
 
 function getExplosionPerkPosition(gs) {
   return gs.selectedMap === 2
-    ? { x: _EXPLOSION_PERK_X_BUS, y: BUS_ROOF_Y }
+    ? { x: _EXPLOSION_PERK_X_BUS, y: CABIN_FLOOR_Y }
     : { x: _EXPLOSION_PERK_X_CITY, y: GROUND_Y };
 }
 
