@@ -6,6 +6,10 @@
 // Contexto de audio del navegador. Se crea bajo demanda cuando el usuario interactúa
 // debido a las políticas de autoplay de los navegadores modernos.
 let audioCtx = null;
+// Un solo buffer de ruido se reutiliza para disparos y explosiones. Crear y
+// rellenar uno nuevo por cada bala provocaba pausas de GC en moviles.
+let sharedNoiseBuffer = null;
+let audioResumePromise = null;
 // Objeto Audio para reproducir el sonido de cambio de oleada desde un archivo MP3
 let waveSound = null;
 // Objeto Audio para la música de fondo (tema principal)
@@ -176,7 +180,24 @@ document.addEventListener('webkitfullscreenchange', function() {
 // Marca el audio como iniciado, garantiza que el contexto de audio esté listo
 function initAudio() {
   audioInit = true;
-  ensureCtx();
+  if (ensureCtx()) {
+    const primeAudio = function() {
+      if (!audioCtx || audioCtx.state !== 'running') return;
+      try {
+        // Fuente silenciosa de una muestra: mantiene desbloqueado Web Audio en
+        // Safari/Chrome movil despues de fullscreen u orientación.
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0;
+        source.connect(gain);
+        gain.connect(audioCtx.destination);
+        source.start(0);
+      } catch(e) {}
+    };
+    if (audioCtx.state === 'running') primeAudio();
+    else resumeAudioContext().then(primeAudio);
+  }
   requestFullscreenAndLock();
 }
 
@@ -184,23 +205,56 @@ function initAudio() {
 
 // Crea el AudioContext si aún no existe, o lo reanuda si está suspendido.
 // El navegador exige una interacción del usuario para crear o reanudar el contexto de audio.
+function resumeAudioContext() {
+  if (!audioCtx || audioCtx.state !== 'suspended') return Promise.resolve();
+  if (audioResumePromise) {
+    return audioResumePromise.then(function() {
+      // Fullscreen puede volver a suspender el contexto justo al terminar una
+      // reanudacion anterior. En ese caso se inicia un intento nuevo.
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioResumePromise = null;
+        return resumeAudioContext();
+      }
+    });
+  }
+  if (!audioResumePromise) {
+    try {
+      audioResumePromise = Promise.resolve(audioCtx.resume())
+        .catch(function() {})
+        .finally(function() { audioResumePromise = null; });
+    } catch(e) {
+      return Promise.resolve();
+    }
+  }
+  return audioResumePromise;
+}
+
 function ensureCtx() {
   if (!audioCtx) {
     try {
       // Usa webkitAudioContext para compatibilidad con navegadores antiguos
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      sharedNoiseBuffer = null;
     } catch(e) { return false; }
   }
   if (audioCtx.state === 'closed') return false;
   if (audioCtx.state === 'suspended') {
-    // No descarta el efecto mientras resume: los nodos creados quedan
-    // programados y sonarán al activarse el contexto en el mismo gesto.
-    try {
-      const resumeResult = audioCtx.resume();
-      if (resumeResult && typeof resumeResult.catch === 'function') resumeResult.catch(function() {});
-    } catch(e) {}
+    resumeAudioContext();
   }
   return true;
+}
+
+// Ejecuta el efecto inmediatamente o justo después de reanudar el contexto.
+// Así los sonidos no se pierden si el navegador suspendió Web Audio.
+function withReadyAudio(playEffect) {
+  if (!ensureCtx()) return;
+  if (audioCtx.state === 'running') {
+    playEffect();
+    return;
+  }
+  resumeAudioContext().then(function() {
+    if (audioCtx && audioCtx.state === 'running') playEffect();
+  });
 }
 
 // ─── GENERACIÓN DE SONIDOS POR SÍNTESIS ───
@@ -210,43 +264,48 @@ function ensureCtx() {
 // type: tipo de onda (sine, square, sawtooth, triangle)
 // duration: duración en segundos, vol: volumen (por defecto 0.3)
 function playTone(freq1, freq2, type, duration, vol) {
-  if (!ensureCtx()) return;
   if (vol === undefined) vol = 0.3;
-  try {
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();           // Generador de onda
-    const gain = audioCtx.createGain();                 // Control de volumen
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq1, now);
-    if (freq2 !== freq1) osc.frequency.exponentialRampToValueAtTime(freq2, now + duration);
-    gain.gain.setValueAtTime(vol * sfxVolume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-    osc.start(now);
-    osc.stop(now + duration);
-  } catch(e) {}
+  withReadyAudio(function() {
+    try {
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();           // Generador de onda
+      const gain = audioCtx.createGain();                 // Control de volumen
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq1, now);
+      if (freq2 !== freq1) osc.frequency.exponentialRampToValueAtTime(freq2, now + duration);
+      gain.gain.setValueAtTime(vol * sfxVolume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch(e) {}
+  });
 }
 
 // Genera ruido blanco de forma procedural llenando un buffer con valores aleatorios.
 // Útil para sonidos de disparos, explosiones y otros efectos no tonales.
 function playNoise(duration, vol) {
-  if (!ensureCtx()) return;
   if (vol === undefined) vol = 0.2;
-  try {
-    const now = audioCtx.currentTime;
-    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i=0; i<data.length; i++) data[i] = Math.random()*2-1;
-    const src = audioCtx.createBufferSource();
-    const gain = audioCtx.createGain();
-    src.buffer = buf;
-    src.connect(gain);
-    gain.connect(audioCtx.destination);
-    gain.gain.setValueAtTime(vol * sfxVolume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-    src.start(now);
-  } catch(e) {}
+  withReadyAudio(function() {
+    try {
+      const now = audioCtx.currentTime;
+      if (!sharedNoiseBuffer || sharedNoiseBuffer.sampleRate !== audioCtx.sampleRate) {
+        sharedNoiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+        const data = sharedNoiseBuffer.getChannelData(0);
+        for (let i=0; i<data.length; i++) data[i] = Math.random()*2-1;
+      }
+      const src = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
+      src.buffer = sharedNoiseBuffer;
+      src.connect(gain);
+      gain.connect(audioCtx.destination);
+      gain.gain.setValueAtTime(vol * sfxVolume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      src.start(now);
+      src.stop(now + duration);
+    } catch(e) {}
+  });
 }
 
 // ─── BIBLIOTECA DE EFECTOS DE SONIDO (SFX) ───

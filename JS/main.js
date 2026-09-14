@@ -33,9 +33,6 @@ function loop(timestamp) {
 
   if (!gs) { gs = createGameState(); }
 
-  // ─── DETECCIÓN DE DISPOSITIVO (táctil/pantalla pequeña) ───
-  if (typeof updateDeviceFlags === 'function') updateDeviceFlags();
-
   // ─── POLLING DEL MANDO (GAMEPAD) ───
   if (typeof updateGamepad === 'function') updateGamepad();
 

@@ -12,11 +12,16 @@ let mouse = {x: LOGICAL_W/2, y: LOGICAL_H/2, down: false};
 let isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 let isSmallScreen = window.innerWidth <= 900 || window.innerHeight <= 600;
 let showTouchControls = isTouchDevice || isSmallScreen;
-function updateDeviceFlags() {
+let deviceFlagsDirty = false;
+function updateDeviceFlags(force) {
+  if (!force && !deviceFlagsDirty) return;
   isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   isSmallScreen = window.innerWidth <= 900 || window.innerHeight <= 600;
   showTouchControls = isTouchDevice || isSmallScreen;
+  deviceFlagsDirty = false;
 }
+window.addEventListener('resize', function() { deviceFlagsDirty = true; }, { passive: true });
+window.addEventListener('orientationchange', function() { deviceFlagsDirty = true; }, { passive: true });
 
 // ─── [NEW] TOUCH CONTROLS STATE ───
 let pointerPressed = false;                   // True por 1 frame al tocar la pantalla
@@ -105,9 +110,9 @@ document.addEventListener('mousemove', e => {
 // Al hacer clic en el canvas: marca el botón como presionado, solicita pantalla completa e inicializa el audio si es necesario
 canvas.addEventListener('mousedown', e => {
   mouse.down = true;
-  // Desbloquea el audio antes de consumir el gesto con Fullscreen API.
-  if (!audioInit) initAudio();
-  else requestFullscreenAndLock();
+  // Cada gesto reanuda Web Audio antes de disparar. Es imprescindible en
+  // navegadores moviles que suspenden el contexto al entrar en fullscreen.
+  initAudio();
 });
 // Al soltar el clic: marca el botón como no presionado
 canvas.addEventListener('mouseup', () => { mouse.down = false; });
@@ -261,9 +266,8 @@ function handlePointerDown(e) {
   try { canvas.setPointerCapture(id); } catch (_) {}
 
   // En móviles el mismo gesto debe desbloquear primero Web Audio.
-  if (!audioInit) initAudio();
-  else requestFullscreenAndLock();
-  updateDeviceFlags();
+  initAudio();
+  updateDeviceFlags(true);
   pointerPressed = true;
   // Actualiza mouse.x/y para que los botones del menú (pausa, etc.)
   // tengan la posición correcta aunque estén fuera de AIM_ZONE
