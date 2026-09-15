@@ -206,39 +206,34 @@ function initAudio() {
 // Crea el AudioContext si aún no existe, o lo reanuda si está suspendido.
 // El navegador exige una interacción del usuario para crear o reanudar el contexto de audio.
 function resumeAudioContext() {
-  if (!audioCtx || audioCtx.state !== 'suspended') return Promise.resolve();
-  if (audioResumePromise) {
-    return audioResumePromise.then(function() {
-      // Fullscreen puede volver a suspender el contexto justo al terminar una
-      // reanudacion anterior. En ese caso se inicia un intento nuevo.
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioResumePromise = null;
-        return resumeAudioContext();
-      }
-    });
-  }
-  if (!audioResumePromise) {
-    try {
-      audioResumePromise = Promise.resolve(audioCtx.resume())
-        .catch(function() {})
-        .finally(function() { audioResumePromise = null; });
-    } catch(e) {
-      return Promise.resolve();
-    }
+  // Safari/iOS puede usar el estado no estandar `interrupted` al volver de
+  // segundo plano, una llamada o un cambio de salida de audio. Cualquier
+  // estado distinto de running/closed necesita un intento de reanudacion.
+  if (!audioCtx || audioCtx.state === 'running' || audioCtx.state === 'closed') return Promise.resolve();
+  if (audioResumePromise) return audioResumePromise;
+  try {
+    audioResumePromise = Promise.resolve(audioCtx.resume())
+      .catch(function() {})
+      .finally(function() { audioResumePromise = null; });
+  } catch(e) {
+    return Promise.resolve();
   }
   return audioResumePromise;
 }
 
 function ensureCtx() {
-  if (!audioCtx) {
+  // Algunos moviles cierran el AudioContext para recuperar memoria. En ese
+  // caso se crea uno nuevo; conservar el contexto cerrado dejaba todos los
+  // disparos permanentemente mudos hasta recargar la aplicacion.
+  if (!audioCtx || audioCtx.state === 'closed') {
     try {
       // Usa webkitAudioContext para compatibilidad con navegadores antiguos
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       sharedNoiseBuffer = null;
+      audioResumePromise = null;
     } catch(e) { return false; }
   }
-  if (audioCtx.state === 'closed') return false;
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx.state !== 'running') {
     resumeAudioContext();
   }
   return true;
@@ -256,6 +251,18 @@ function withReadyAudio(playEffect) {
     if (audioCtx && audioCtx.state === 'running') playEffect();
   });
 }
+
+// Los sistemas moviles suspenden/interrumpen Web Audio cuando la app pierde
+// visibilidad. Al regresar se adelanta la recuperacion; el siguiente toque en
+// FIRE vuelve a llamar initAudio dentro del gesto permitido por el navegador.
+function recoverAudioAfterInterruption() {
+  if (!audioInit || document.hidden) return;
+  if (!ensureCtx()) return;
+  resumeAudioContext();
+}
+document.addEventListener('visibilitychange', recoverAudioAfterInterruption);
+window.addEventListener('pageshow', recoverAudioAfterInterruption);
+window.addEventListener('focus', recoverAudioAfterInterruption);
 
 // ─── GENERACIÓN DE SONIDOS POR SÍNTESIS ───
 
